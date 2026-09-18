@@ -24,14 +24,12 @@ describe("createWalletIfAbsent", () => {
   });
 
   it("should not create a duplicate wallet and return the existing one when userId already has a wallet (FR-002)", async () => {
-    ddbMock
-      .on(PutCommand)
-      .rejects(
-        new ConditionalCheckFailedException({
-          message: "conditional check failed",
-          $metadata: {},
-        }),
-      );
+    ddbMock.on(PutCommand).rejects(
+      new ConditionalCheckFailedException({
+        message: "conditional check failed",
+        $metadata: {},
+      }),
+    );
     ddbMock.on(GetCommand).resolves({
       Item: {
         userId: "user-1",

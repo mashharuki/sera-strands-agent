@@ -1,4 +1,10 @@
 import { Hono } from "hono";
+import {
+  callSeraToolSafely,
+  SeraToolError,
+  toUserFacingMessage,
+} from "../agent/errors.js";
+import { callSeraTool } from "../agent/sera-mcp-client.js";
 import type { AuthedVariables } from "../auth/privy.js";
 import { createWalletIfAbsent, getWallet } from "../store/wallets.js";
 
@@ -34,4 +40,37 @@ walletRoutes.get("/wallet", async (c) => {
     );
   }
   return c.json(wallet, 200);
+});
+
+/**
+ * FR-003: 残高確認。FR-004: 対象は常に呼び出しユーザー自身の`wallet.address`のみで、
+ * リクエストからアドレスを受け取らないため、他人のウォレットを問い合わせる経路は存在しない
+ * （所有権検証の構造的な担保）。FR-017: sera-mcp呼び出し失敗時は成功と誤認させない。
+ */
+walletRoutes.get("/wallet/balance", async (c) => {
+  const userId = c.get("userId");
+  const wallet = await getWallet(userId);
+  if (!wallet) {
+    return c.json(
+      {
+        code: "NOT_FOUND",
+        message: "ウォレットが未作成です。先にウォレットを作成してください",
+      },
+      404,
+    );
+  }
+  try {
+    const balances = await callSeraToolSafely("get_balances", () =>
+      callSeraTool("get_balances", { address: wallet.address }),
+    );
+    return c.json({ walletAddress: wallet.address, balances }, 200);
+  } catch (err) {
+    if (err instanceof SeraToolError) {
+      return c.json(
+        { code: "SERA_UNAVAILABLE", message: toUserFacingMessage(err) },
+        502,
+      );
+    }
+    throw err;
+  }
 });

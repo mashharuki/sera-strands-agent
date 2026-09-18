@@ -98,11 +98,11 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: ウォレットと残高を保有するアカウントでログインし、チャットで残高確認を依頼して結果が表示されることを単独で確認できる（`quickstart.md` シナリオ2）。
 
-- [ ] T037 [US2] `apps/backend/src/agent/tools/balance.ts`に`sera-mcp`の`get_balances`を呼び出す残高取得ツールを実装する
-- [ ] T038 [US2] `apps/backend/src/routes/wallet.ts`に`GET /wallet/balance`ルートを追加する
-- [ ] T039 [US2] `apps/backend/src/routes/wallet.ts`の残高確認処理に所有権検証（リクエストの`userId`とWalletの`userId`一致、FR-004）を追加する
-- [ ] T040 [P] [US2] `apps/frontend/src/features/wallet/BalanceView.tsx`に残高表示コンポーネントを実装する
-- [ ] T041 [P] [US2] `apps/backend/test/routes/wallet.test.ts`に、ウォレット未作成時は作成を提案する応答になること（FR-003補完）、他人のウォレットを指定した場合に拒否されること（FR-004）を検証するvitestを追加する
+- [X] T037 [US2] `apps/backend/src/agent/tools/balance.ts`に`sera-mcp`の`get_balances`を呼び出す残高取得ツールを実装する
+- [X] T038 [US2] `apps/backend/src/routes/wallet.ts`に`GET /wallet/balance`ルートを追加する
+- [X] T039 [US2] `apps/backend/src/routes/wallet.ts`の残高確認処理に所有権検証（リクエストの`userId`とWalletの`userId`一致、FR-004）を追加する
+- [X] T040 [P] [US2] `apps/frontend/src/features/wallet/BalanceView.tsx`に残高表示コンポーネントを実装する
+- [X] T041 [P] [US2] `apps/backend/test/routes/wallet.test.ts`に、ウォレット未作成時は作成を提案する応答になること（FR-003補完）、他人のウォレットを指定した場合に拒否されること（FR-004）を検証するvitestを追加する
 
 **チェックポイント**: US1・US2が組み合わさり、ウォレット作成〜残高確認までの一連の読み取り体験がデモ可能。
 
