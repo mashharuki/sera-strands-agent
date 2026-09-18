@@ -78,11 +78,13 @@ spec.md Key Entities「取引確認内容（承認リクエスト）」に対応
 | quoteId | string \| null | 紐づくQuote（swapのみ） |
 | status | enum: `pending_confirmation` \| `chat_approved` \| `signed` \| `executing` \| `executed` \| `cancelled` \| `expired` | 状態（下記状態遷移参照） |
 | approvedContentSnapshot | object | ユーザーに提示した内容のスナップショット（FR-010: 実行内容との完全一致を保証するため、実行時はこのスナップショットのみを参照する） |
+| expiresAt | string (ISO8601) | 確認内容の有効期限。swapは`Quote.expiresAt`と同期し、transferは`prepare`時点の手数料見積もり等に基づき独立に設定する（swap・transfer共通の失効判定に用いる） |
 | createdAt / updatedAt | string (ISO8601) | 日時 |
 
 **検証ルール**:
 - FR-006/FR-008: 必要情報が揃うまで`ApprovalRequest`は作成しない（チャット側で不足情報を質問済みであること）。
 - FR-009/FR-010: `status`が`signed`になって初めて実行（`executing`）に進める。実行内容は`approvedContentSnapshot`と完全一致させる。
+- FR-011: `expiresAt`を過ぎた`ApprovalRequest`は`confirm`で実行不可（swap・transfer共通）。swapは`Quote.expiresAt`との整合を取り、transferは`prepare`時点で設定した独自の有効期間に従う。
 - FR-012: 同一`approvalId`での`confirm`呼び出しは、DynamoDBの条件付き書き込み（`attribute_not_exists`または状態遷移チェック）により1度しか`executing`へ遷移しない。二重リクエストは既存の状態を返す。
 
 **状態遷移**:
