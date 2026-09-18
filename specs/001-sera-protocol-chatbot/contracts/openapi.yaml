@@ -30,8 +30,23 @@ paths:
           $ref: "#/components/responses/NotFound"
     post:
       summary: ウォレットを作成する（冪等）
-      description: FR-001, FR-002。既に存在する場合は新規作成せず既存情報を返す。
+      description: >
+        FR-001, FR-002。既に存在する場合は新規作成せず既存情報を返す。
+        addressはPrivy embedded walletがクライアント側で発行したアドレスを渡す
+        （サーバー側は秘密鍵を扱わない、research.md §5.2）。
       operationId: createMyWallet
+      parameters:
+        - name: address
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: chainId
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 11155111
       responses:
         "200":
           description: 既存ウォレットが存在した場合

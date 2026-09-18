@@ -1,5 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { ChatShell } from "./features/chat/ChatShell.tsx";
+import { WalletCreationFlow } from "./features/wallet/WalletCreationFlow.tsx";
 import "./App.css";
 
 /** FR-019: 未ログインの利用者には先にログインを促し、チャット機能へのアクセスを許可しない。 */
@@ -26,7 +27,12 @@ function App() {
     );
   }
 
-  return <ChatShell />;
+  return (
+    <>
+      <WalletCreationFlow />
+      <ChatShell />
+    </>
+  );
 }
 
 export default App;

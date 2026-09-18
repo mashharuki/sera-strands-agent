@@ -80,13 +80,13 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: ウォレット未作成のアカウントでログインし、チャットに「ウォレットを作成して」と入力し、完了後にウォレットアドレスが提示される一連の流れを単独で確認できる（`quickstart.md` シナリオ1）。
 
-- [ ] T030 [P] [US1] `apps/backend/src/store/wallets.ts`に`Wallet`エンティティのCRUDを実装する。`userId`への条件付きPut（`attribute_not_exists`）でFR-002（重複作成防止）を担保する
-- [ ] T031 [US1] `apps/backend/src/routes/wallet.ts`に`POST /wallet`・`GET /wallet`ルートを実装する（`contracts/openapi.yaml`準拠。未ログイン時は認証を促す、FR-019）
-- [ ] T032 [US1] `apps/frontend/src/features/wallet/createWallet.ts`にPrivy embedded walletのクライアント側作成フローを実装する
-- [ ] T033 [US1] `apps/backend/src/agent/tools/wallet.ts`にウォレット作成の自然言語意図を検出し`POST /wallet`相当の処理へ橋渡しするエージェントツールを実装する
-- [ ] T034 [US1] `apps/frontend/src/features/wallet/WalletCreationFlow.tsx`にチャット上でのウォレット作成フロー（作成完了後にアドレスを表示、既存ウォレットがある場合の案内）のUIを実装する
-- [ ] T035 [P] [US1] `apps/backend/test/store/wallets.test.ts`に、同一`userId`への重複作成が新規作成を発生させないことを検証するvitestを実装する（FR-002）
-- [ ] T036 [P] [US1] `apps/backend/test/routes/wallet.test.ts`に、未認証リクエストが拒否されること（FR-019）を検証するvitestを実装する
+- [X] T030 [P] [US1] `apps/backend/src/store/wallets.ts`に`Wallet`エンティティのCRUDを実装する。`userId`への条件付きPut（`attribute_not_exists`）でFR-002（重複作成防止）を担保する
+- [X] T031 [US1] `apps/backend/src/routes/wallet.ts`に`POST /wallet`・`GET /wallet`ルートを実装する（`contracts/openapi.yaml`準拠。未ログイン時は認証を促す、FR-019）
+- [X] T032 [US1] `apps/frontend/src/features/wallet/createWallet.ts`にPrivy embedded walletのクライアント側作成フローを実装する
+- [X] T033 [US1] `apps/backend/src/agent/tools/wallet.ts`にウォレット作成の自然言語意図を検出し`POST /wallet`相当の処理へ橋渡しするエージェントツールを実装する
+- [X] T034 [US1] `apps/frontend/src/features/wallet/WalletCreationFlow.tsx`にチャット上でのウォレット作成フロー（作成完了後にアドレスを表示、既存ウォレットがある場合の案内）のUIを実装する
+- [X] T035 [P] [US1] `apps/backend/test/store/wallets.test.ts`に、同一`userId`への重複作成が新規作成を発生させないことを検証するvitestを実装する（FR-002）
+- [X] T036 [P] [US1] `apps/backend/test/routes/wallet.test.ts`に、未認証リクエストが拒否されること（FR-019）を検証するvitestを実装する
 
 **チェックポイント**: US1が独立して完全に動作し、デモ可能。
 

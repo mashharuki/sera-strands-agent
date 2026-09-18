@@ -1,4 +1,5 @@
 import { createAgent } from "../agent/strands-client.js";
+import { createWalletStatusTool } from "../agent/tools/wallet.js";
 import { appendMessage } from "../store/conversations.js";
 
 export type ChatStreamEvent =
@@ -29,7 +30,7 @@ export async function* streamChatTurn(
     content: input.message,
   });
 
-  const agent = createAgent([]);
+  const agent = createAgent([createWalletStatusTool(input.userId)]);
   let assistantText = "";
 
   try {
