@@ -1,5 +1,8 @@
 import { createAgent } from "../agent/strands-client.js";
 import { createBalanceTool } from "../agent/tools/balance.js";
+import { createHistoryTool } from "../agent/tools/history.js";
+import { createOrderbookTool } from "../agent/tools/orderbook.js";
+import { createQuoteTool } from "../agent/tools/quote.js";
 import { createWalletStatusTool } from "../agent/tools/wallet.js";
 import { appendMessage } from "../store/conversations.js";
 
@@ -34,6 +37,9 @@ export async function* streamChatTurn(
   const agent = createAgent([
     createWalletStatusTool(input.userId),
     createBalanceTool(input.userId),
+    createQuoteTool(input.userId),
+    createOrderbookTool(),
+    createHistoryTool(input.userId),
   ]);
   let assistantText = "";
 

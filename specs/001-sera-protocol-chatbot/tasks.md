@@ -114,13 +114,13 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: ログイン済みユーザーが価格・板・履歴のいずれかを尋ね、意図した種類の情報が他の種類と混同されずに返ることを単独で確認できる（`quickstart.md` シナリオ3）。
 
-- [ ] T042 [P] [US3] `apps/backend/src/store/quotes.ts`に`Quote`エンティティのCRUD（TTL付き）を実装する
-- [ ] T043 [US3] `apps/backend/src/agent/tools/quote.ts`と`apps/backend/src/routes/market.ts`の`GET /market/quote`に、`sera-mcp`の`get_quote`呼び出しと`Quote`永続化を実装する
-- [ ] T044 [US3] `apps/backend/src/agent/tools/orderbook.ts`と`GET /market/orderbook`に、`infer_book`/`probe_depth`呼び出しと`isSynthetic: true`ラベル付けを実装する（`research.md` §1.3、実データではないことの明示）
-- [ ] T045 [US3] `apps/backend/src/agent/tools/history.ts`と`GET /market/history`に、`settlement_status`レスポンスを`TradeHistoryItem`へ正規化するアダプターを実装する
-- [ ] T046 [US3] `apps/backend/src/agent/tools/market-router.ts`に、ユーザー発話を板/見積もり/履歴の3種に分類しFR-005（混同禁止）を担保するルーティングロジックを実装する
-- [ ] T047 [P] [US3] `apps/frontend/src/features/market/`に板・見積もり・履歴それぞれの表示コンポーネントを実装する
-- [ ] T048 [P] [US3] `apps/backend/test/agent/market-router.test.ts`に、3種のクエリが正しく分類されることを検証するvitestを実装する
+- [X] T042 [P] [US3] `apps/backend/src/store/quotes.ts`に`Quote`エンティティのCRUD（TTL付き）を実装する
+- [X] T043 [US3] `apps/backend/src/agent/tools/quote.ts`と`apps/backend/src/routes/market.ts`の`GET /market/quote`に、`sera-mcp`の`get_quote`呼び出しと`Quote`永続化を実装する
+- [X] T044 [US3] `apps/backend/src/agent/tools/orderbook.ts`と`GET /market/orderbook`に、`infer_book`/`probe_depth`呼び出しと`isSynthetic: true`ラベル付けを実装する（`research.md` §1.3、実データではないことの明示）
+- [X] T045 [US3] `apps/backend/src/agent/tools/history.ts`と`GET /market/history`に、`settlement_status`レスポンスを`TradeHistoryItem`へ正規化するアダプターを実装する
+- [X] T046 [US3] `apps/backend/src/agent/tools/market-router.ts`に、ユーザー発話を板/見積もり/履歴の3種に分類しFR-005（混同禁止）を担保するルーティングロジックを実装する
+- [X] T047 [P] [US3] `apps/frontend/src/features/market/`に板・見積もり・履歴それぞれの表示コンポーネントを実装する
+- [X] T048 [P] [US3] `apps/backend/test/agent/market-router.test.ts`に、3種のクエリが正しく分類されることを検証するvitestを実装する
 
 **チェックポイント**: US1〜US3が組み合わさり、読み取り系機能一式（ウォレット作成・残高・市場情報）がデモ可能。
 
