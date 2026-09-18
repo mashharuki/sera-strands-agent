@@ -1,0 +1,498 @@
+openapi: 3.0.3
+info:
+  title: Sera Protocol AIチャットボット API
+  version: 0.1.0-draft
+  description: >
+    REST API契約の正本（/speckit-plan Phase 1 出力）。実装は packages/api-spec/openapi.yaml
+    に配置し、OpenAPI Generator でTypeScriptクライアントを生成する
+    （research.md §6.2）。MCPツール定義（sera-mcp側）は本契約に含めない。
+    詳細は contracts/mcp-tools.md を参照。
+    このファイルはスケルトンであり、全スキーマ・全エラーレスポンスを網羅した
+    最終版ではない。実装詳細（バリデーション制約の値等）は /speckit-tasks で確定する。
+
+security:
+  - privyBearerAuth: []
+
+paths:
+  /wallet:
+    get:
+      summary: 自分のウォレット情報を取得する
+      description: FR-003, FR-004 (所有権検証) に対応。未作成の場合は404。
+      operationId: getMyWallet
+      responses:
+        "200":
+          description: ウォレット情報
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      summary: ウォレットを作成する（冪等）
+      description: FR-001, FR-002。既に存在する場合は新規作成せず既存情報を返す。
+      operationId: createMyWallet
+      responses:
+        "200":
+          description: 既存ウォレットが存在した場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+        "201":
+          description: 新規作成した場合
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /wallet/balance:
+    get:
+      summary: 自分のウォレット残高を取得する
+      description: FR-003。読み取り専用操作。
+      operationId: getMyWalletBalance
+      responses:
+        "200":
+          description: 残高一覧
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /market/orderbook:
+    get:
+      summary: 板情報（参考値）を取得する
+      description: >
+        FR-005。sera-mcpの infer_book/probe_depth による合成ラダー。
+        実データの板情報ではないため isSynthetic=true を含む
+        (research.md §1.3)。
+      operationId: getOrderbook
+      parameters:
+        - name: pair
+          in: query
+          required: true
+          schema:
+            type: string
+          example: USDC/USDT
+      responses:
+        "200":
+          description: 板情報（参考値）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderbookView"
+
+  /market/quote:
+    get:
+      summary: swapの価格見積もりを取得する
+      description: FR-005, FR-011（有効期限を含む）。
+      operationId: getQuote
+      parameters:
+        - name: fromToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: toToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 見積もり
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /market/history:
+    get:
+      summary: 自分の取引履歴を取得する
+      description: FR-005。sera-mcpのsettlement_status系レスポンスを正規化して返す。
+      operationId: getTradeHistory
+      responses:
+        "200":
+          description: 取引履歴一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TradeHistoryItem"
+
+  /transactions/swap/prepare:
+    post:
+      summary: swapの確認内容を作成する
+      description: FR-006, FR-008。必要情報が揃っていない場合は400（チャット側で先に補完する）。
+      operationId: prepareSwap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrepareSwapRequest"
+      responses:
+        "201":
+          description: 承認待ちのApprovalRequest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+
+  /transactions/swap/confirm:
+    post:
+      summary: 承認・署名済みのswapを実行する
+      description: >
+        FR-009, FR-010, FR-012（冪等）。approvalIdをキーに冪等処理し、
+        同一approvalIdへの複数回呼び出しは1度しか実行しない。
+      operationId: confirmSwap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmTransactionRequest"
+      responses:
+        "202":
+          description: ブロードキャスト受理（オンチェーン確定は非同期、GET /transactions/{id}で確認）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "409":
+          description: 承認内容が失効・変更済み、または既に実行済み（FR-011, FR-012）
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/transfer/prepare:
+    post:
+      summary: 送金の確認内容を作成する
+      description: FR-006, FR-008。
+      operationId: prepareTransfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrepareTransferRequest"
+      responses:
+        "201":
+          description: 承認待ちのApprovalRequest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+
+  /transactions/transfer/confirm:
+    post:
+      summary: 承認・署名済みの送金を実行する
+      description: FR-009, FR-010, FR-012（冪等）。
+      operationId: confirmTransfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmTransactionRequest"
+      responses:
+        "202":
+          description: ブロードキャスト受理
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "409":
+          description: 承認内容が失効・変更済み、または既に実行済み
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions:
+    get:
+      summary: 自分の取引一覧を取得する
+      description: FR-015。実行直後に限らず後から参照できる。
+      operationId: listTransactions
+      responses:
+        "200":
+          description: 取引一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /transactions/{transactionId}:
+    get:
+      summary: 特定の取引の状態・結果を取得する
+      description: FR-013, FR-014, FR-015。chainStateはbroadcast_pending/confirmed_success/confirmed_failed/unknownを区別する。
+      operationId: getTransaction
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 取引状態
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # /chat は Lambda Function URL 経由のレスポンスストリーミングで提供するため、
+  # 本OpenAPI契約では入出力メッセージ形状のみを記述し、HTTPバインディングの詳細
+  # （ストリーミングフレーミング）は実装フェーズ(research.md §4.1, S2)で確定する。
+  /chat:
+    post:
+      summary: チャットへの自然言語メッセージを送信する（ストリーミング応答）
+      description: >
+        FR-001〜FR-008の自然言語インターフェース窓口。エージェントが
+        swap/送金の意図を検出した場合、内部でprepare相当の処理を行い、
+        ApprovalRequestへの参照をストリームイベントとして返す。
+        実際の配信はAPI Gatewayではなく Lambda Function URL
+        （レスポンスストリーミング）を使用する想定（research.md §4.1）。
+      operationId: postChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageRequest"
+      responses:
+        "200":
+          description: ストリーミングされたエージェント応答（フレーミング詳細は実装フェーズで確定）
+          content:
+            application/x-ndjson:
+              schema:
+                $ref: "#/components/schemas/ChatStreamEvent"
+
+components:
+  securitySchemes:
+    privyBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Privy JWT
+
+  responses:
+    NotFound:
+      description: 対象が見つからない
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Wallet:
+      type: object
+      required: [userId, address, chainId, createdAt]
+      properties:
+        userId:
+          type: string
+        address:
+          type: string
+        chainId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    BalanceList:
+      type: object
+      properties:
+        walletAddress:
+          type: string
+        balances:
+          type: array
+          items:
+            type: object
+            properties:
+              token:
+                type: string
+              amount:
+                type: string
+
+    OrderbookView:
+      type: object
+      required: [pair, isSynthetic, bids, asks]
+      properties:
+        pair:
+          type: string
+        isSynthetic:
+          type: boolean
+          description: sera-mcpのinfer_book由来の合成データであることを示す
+        bids:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderbookLevel"
+        asks:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderbookLevel"
+
+    OrderbookLevel:
+      type: object
+      properties:
+        price:
+          type: string
+        size:
+          type: string
+
+    Quote:
+      type: object
+      required: [quoteId, fromToken, toToken, amount, estimatedRate, expiresAt]
+      properties:
+        quoteId:
+          type: string
+        fromToken:
+          type: string
+        toToken:
+          type: string
+        amount:
+          type: string
+        estimatedRate:
+          type: string
+        estimatedFee:
+          type: string
+        slippage:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    TradeHistoryItem:
+      type: object
+      properties:
+        transactionId:
+          type: string
+        type:
+          type: string
+          enum: [swap, transfer]
+        summary:
+          type: string
+        chainState:
+          $ref: "#/components/schemas/ChainState"
+        occurredAt:
+          type: string
+          format: date-time
+
+    PrepareSwapRequest:
+      type: object
+      required: [quoteId, amount]
+      properties:
+        quoteId:
+          type: string
+        amount:
+          type: string
+
+    PrepareTransferRequest:
+      type: object
+      required: [token, amount, destinationAddress]
+      properties:
+        token:
+          type: string
+        amount:
+          type: string
+        destinationAddress:
+          type: string
+
+    ApprovalRequest:
+      type: object
+      required: [approvalId, type, status, approvedContentSnapshot]
+      properties:
+        approvalId:
+          type: string
+          description: クライアント生成UUID。FR-012の冪等性キーを兼ねる
+        type:
+          type: string
+          enum: [swap, transfer]
+        status:
+          type: string
+          enum: [pending_confirmation, chat_approved, signed, executing, executed, cancelled, expired]
+        approvedContentSnapshot:
+          type: object
+          description: ユーザーに提示した確認内容のスナップショット（ネットワーク・トークン・数量・送信先・手数料・スリッページ等）
+        expiresAt:
+          type: string
+          format: date-time
+
+    ConfirmTransactionRequest:
+      type: object
+      required: [approvalId, signature]
+      properties:
+        approvalId:
+          type: string
+        signature:
+          type: string
+          description: Privy embedded walletによるクライアント側署名（EIP-712またはraw tx署名）
+
+    ChainState:
+      type: string
+      enum: [broadcast_pending, confirmed_success, confirmed_failed, unknown]
+
+    Transaction:
+      type: object
+      required: [transactionId, approvalId, type, chainState]
+      properties:
+        transactionId:
+          type: string
+        approvalId:
+          type: string
+        type:
+          type: string
+          enum: [swap, transfer]
+        txHash:
+          type: string
+          nullable: true
+        chainState:
+          $ref: "#/components/schemas/ChainState"
+        broadcastAt:
+          type: string
+          format: date-time
+        confirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ChatMessageRequest:
+      type: object
+      required: [sessionId, message]
+      properties:
+        sessionId:
+          type: string
+        message:
+          type: string
+
+    ChatStreamEvent:
+      type: object
+      description: NDJSON形式で逐次配信されるイベント（トークン片・ツール呼び出し・確認要求等）。詳細スキーマは実装フェーズで確定。
+      required: [eventType]
+      properties:
+        eventType:
+          type: string
+          enum: [token, tool_call, approval_required, error, done]
+        payload:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
