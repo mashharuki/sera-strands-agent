@@ -44,7 +44,7 @@
 - v1とv2の併用（読み取りはv2、実行はv1等）: 依存関係とメンテナンス対象が倍増し、教材としての分かりやすさ（憲章の目的）を損なうため、初期実装では採用しない。将来的な拡張候補としてのみ記録する。
 
 **未決事項・リスク（未確認・推測）**:
-- v1が実際にEthereum Sepolia上で決済しているか（chainIdやverifying contractの明示は未確認。`SERA_NETWORK=sepolia`というAPI URL切替のみ確認）は未確認。実装着手前に、Seraチームへの直接確認または`ARCHITECTURE.md`のさらなる精読で検証する技術検証タスクとする（§8参照）。
+- ~~v1が実際にEthereum Sepolia上で決済しているか~~ → **解消済み**。スパイクS3（[spikes/s3-sera-mcp-http/findings.md](./spikes/s3-sera-mcp-http/findings.md)）で`src/index.ts`の起動時sanity checkを確認し、`SERA_NETWORK=sepolia`がchainId `11155111`（Ethereum Sepolia）に対応することを実コードで確認した。
 - v1・v2が同名パッケージである理由（フォーク、後継、無関係な試作等）は不明。Seraチームへの確認を推奨する。
 - `sera-agents`のx402デモは"Base Sepolia"（Ethereumとは別チェーンのBase）に言及しており、本プロジェクトが対象とするEthereum Sepoliaと混同しないこと。
 
@@ -122,7 +122,9 @@
 
 ### 4.2 sera-mcpの実行方式: Lambda内蔵 vs 別サービス
 
-**Decision**: `sera-mcp`(v1)はLambda内蔵方式を採用する。バックエンドLambda（Honoアプリ）のプロセス内でStrands AgentがMCPクライアントとして`sera-mcp`のStreamable HTTPモード（`--transport http --stateless`）を呼び出す、または`sera-mcp`のツールハンドラーをライブラリとして直接importして関数呼び出しする方式のいずれかを実装フェーズで比較検証する。
+**Decision**: `sera-mcp`(v1)はLambda内蔵方式を採用する。バックエンドLambda（Honoアプリ）の実行環境内で`sera-mcp`を子プロセスとして`--transport http --stateless --host 127.0.0.1`起動し、同一Lambda内からループバック（`http://127.0.0.1:<port>/mcp`）で呼び出す。
+
+**追記（スパイクS3で判明、[spikes/s3-sera-mcp-http/findings.md](./spikes/s3-sera-mcp-http/findings.md)）**: `sera-mcp`のStreamable HTTPトランスポートには**認証機構が意図的に実装されておらず**、ソースコード上も非ループバックホストへのバインドを起動時ガードで拒否する設計になっている（ループバック以外は`allowedHosts`または明示的なリスク許容フラグが必須）。これは「Lambda内蔵・ループバックのみで通信する」という本決定を積極的に後押しする材料であり、逆に将来「別サービスとして切り出す」場合は、sera-mcp自体には認証機構がないため、その前段にリバースプロキシ等の認証レイヤーを別途構築する必要がある（フルサーバーレス・低コストの目的に反するため、この案は採用しない）。`sera-mcp`をライブラリとして直接importする方式（`src/server/create-server.ts`のdeep import）も技術的には可能だが、`package.json`に`exports`フィールドが無く未公開の内部APIに依存することになるため、保守性を優先し採用しない。公開インターフェース（CLI）のまま子プロセス起動する方式を正とする。
 
 **Rationale**: 憲章 原則II（フルサーバーレスの堅持、常時稼働するサーバー/コンテナを持たない）に照らすと、`sera-mcp`を別ECS/Fargateサービスとして常駐させる案は追加の運用コストと複雑さを生み、教材としての低コスト・保守性の目的に反する。v1が明示的に`--stateless`モードをサポートすることが、Lambda内蔵方式を選ぶ決定打である。
 
@@ -179,9 +181,9 @@
 - **ブロードキャスト済み・結果不明の取引の追跡**: `sendTransfer`/`execute_swap`実行直後は「broadcastしたが未確定」の状態でDynamoDBに記録し、US6（結果照会）はこのレコードを起点に`settlement_status`等でオンチェーン状態を再確認する。
 - **残高不足・ガス不足・署名拒否・外部API障害**: いずれもsera-mcp側のツール応答またはPrivyの署名フローのエラーをアプリ層で捕捉し、spec.md FR-016/FR-017/FR-020に従いチャットで理由を提示する。
 
-### 5.4 テスト環境の対応状況（未確認・推測）
+### 5.4 テスト環境の対応状況（実コード確認、スパイクS6で追加調査済み）
 
-`docs/memo.md`§6は「開発・自動テストではテストネットまたはdry-runを第一候補とし、実際の対応状況を確認してください」と要求しているが、sera-mcp(v1)のdry-run機能の有無は本調査では確認できていない（未確認）。実装フェーズの技術検証タスクとして、v1のテストモード/dry-runオプションの有無をソースコードで直接確認することを推奨する。
+`docs/memo.md`§6の要求に対し、sera-mcp(v1)の`src/config.ts`（commit `d6f50c1aa6098354d796b777a5474989e9acc1f7`）を確認した結果、`POLICY_DRY_RUN`環境変数によるdry-runモードが実在することを確認した（詳細: [spikes/s6-dry-run/findings.md](./spikes/s6-dry-run/findings.md)）。加えて`maxNotionalUsd`・`allowedRecipients`・`allowedSymbols`・`defaultExpirationSeconds`等を持つ`PolicyEngine`という多層防御レイヤーが既に存在することも判明した。開発・自動テストでは`SERA_NETWORK=sepolia`＋`POLICY_DRY_RUN=true`を第一候補とする。
 
 ---
 
@@ -195,11 +197,11 @@
 
 ### 6.2 OpenAPI・生成コード
 
-**Decision**: `packages/api-spec/openapi.yaml`をREST API契約の正本とし、OpenAPI Generatorで`packages/api-spec`配下にTypeScriptクライアントを生成する。Honoの実装（`apps/backend`）と生成コード（フロントエンドが利用する型・クライアント）の整合性は、CIで生成コマンドを実行し差分がないことを確認するステップ（`git diff --exit-code`相当）で担保する。MCPのツール定義（sera-mcp側のツールスキーマ）はこのOpenAPI契約に含めない。両者は別レイヤーの契約であり、フロントエンドはMCPツールを直接呼び出さない（常にバックエンドのREST APIを経由する）。
+**Decision**: `packages/api-spec/openapi.yaml`をREST API契約の正本とし、**`openapi-typescript` + `openapi-fetch`**（Zero-Java、TypeScriptのみで完結）で`packages/api-spec`配下に型定義と軽量な型安全fetchクライアントを生成する。Honoの実装（`apps/backend`）と生成コード（フロントエンドが利用する型・クライアント）の整合性は、CIで生成コマンドを実行し差分がないことを確認するステップ（`git diff --exit-code`相当）で担保する。MCPのツール定義（sera-mcp側のツールスキーマ）はこのOpenAPI契約に含めない。両者は別レイヤーの契約であり、フロントエンドはMCPツールを直接呼び出さない（常にバックエンドのREST APIを経由する）。
 
-**Rationale**: 憲章 原則VI（API契約ファーストと生成コードの整合性、REST APIとMCPツール定義の区別）に直接対応。
+**Rationale**: 憲章 原則VI（API契約ファーストと生成コードの整合性、REST APIとMCPツール定義の区別）に直接対応。`docs/memo.md`は「OpenAPI Generator」（`@openapitools/openapi-generator-cli`、Javaベース）を原則採用としているが、スパイクS7（[spikes/s7-openapi-gen/findings.md](./spikes/s7-openapi-gen/findings.md)）で実行確認した通り、ローカル環境のJavaバージョン（1.8, class file version 52.0）が`@openapitools/openapi-generator-cli@2.41.0`の要求するJava 11相当（class file version 55.0）を満たせず`UnsupportedClassVersionError`で起動不能だった。これは`docs/memo.md`が指定する互換性検討の対象事例であり、問題点・根拠・代替案・推奨案はS7のfindings.mdに記録した上で、Zero-JavaかつCIでの追加ランタイム導入が不要な`openapi-typescript`+`openapi-fetch`を代替として採用する。
 
-**未確認**: OpenAPI Generatorの具体的なバージョンとTypeScript生成テンプレートの組み合わせ（axios/fetchベース等）は実装フェーズで選定する。
+**Alternatives considered**: `@openapitools/openapi-generator-cli`（Java互換性問題により不採用）、`orval`（型+TanStack Queryフック自動生成まで行うが依存が増えるため、まずはより薄い`openapi-typescript`+`openapi-fetch`から始める）。
 
 ---
 
@@ -207,6 +209,7 @@
 
 `docs/memo.md`が指定する技術リストのうち、本調査で個別の互換性確認を行っていない項目（React Bits, TanStack, Turbo, CodeRabbit等）については、致命的な非互換の兆候は見つかっていないが、深い検証はしていない（主観）。これらは実装フェーズの技術検証（§8）またはタスク着手時に個別確認する。特筆すべき懸念のみ以下に記す。
 
+- **OpenAPI Generator（`@openapitools/openapi-generator-cli`）**: スパイクS7で実行確認の結果、Java互換性問題（Java 8環境で`UnsupportedClassVersionError`）により不採用と判断し、`openapi-typescript`+`openapi-fetch`を代替として採用した。詳細は§6.2および[spikes/s7-openapi-gen/findings.md](./spikes/s7-openapi-gen/findings.md)を参照。
 - **Turbo**: 現状`AGENTS.md`にはTurboのスクリプトは存在せず、pnpmワークスペースの`--filter`のみで運用されている。Turboの導入はビルドキャッシュ・タスクオーケストレーションの利点があるが、必須ではない。初期実装では現行のpnpm運用を維持し、ビルド時間が問題になった時点でTurbo導入を検討する（YAGNI、追加ツールの導入コストを避ける）。
 - **Node.jsバージョン**: `@strands-agents/sdk`がNode.js 22+を要求する（§2）。AWS LambdaのNode.jsランタイムが22.xを提供しているかは本調査で未確認であり、技術検証タスクとする（§8）。未提供の場合はLambda用にコンテナイメージデプロイまたはカスタムランタイムを検討する必要がある。
 
@@ -230,9 +233,22 @@
 
 ---
 
+## 9-A. 実装中に判明した新たな課題: sera-mcpはnpmレジストリに未公開
+
+**実コード確認（`/speckit-implement`実行中、2026-09-18）**: `npm view sera-mcp` / `npm view @sera-cx/sera-mcp`はいずれも404で、`sera-mcp`(v1)はnpm公開レジストリに存在しない。`package.json`の`mcpName: "io.github.sera-cx/sera-mcp"`はMCP Registry向けのメタデータであり、npm配布を意味しない。さらに`package.json`の`"build": "tsc"`スクリプトはあるが`"prepare"`スクリプトが無いため、GitHubから直接git依存（`github:sera-cx/sera-mcp#<commit>`）としてインストールしても、`bin`/`main`が指す`dist/`ディレクトリはビルドされず生成されない。
+
+**影響**: `apps/backend`から`sera-mcp`を通常の依存関係として`pnpm add`することはできない。Lambdaへのバンドル方法（CDKの`NodejsFunction`バンドリング、または別途Lambda Layerとしてビルド済み`dist/`を同梱する等）を追加で設計する必要がある。
+
+**暫定対応（本ターンで採用、要ユーザー確認）**: `apps/backend/src/agent/sera-mcp-client.ts`は、`sera-mcp`の実行バイナリパスを環境変数`SERA_MCP_BIN`で受け取り、子プロセスとして起動する設計とした。ビルド済みバイナリの用意方法（CI/デプロイスクリプトで`sera-cx/sera-mcp`を指定コミットでclone・`pnpm install && pnpm build`し、その`dist/`をLambdaバンドルに含める）は`apps/cdk`のバンドリング設定またはデプロイスクリプト（T075）側の未実装課題として残す。
+
 ## 9. 未決事項サマリー（実装着手前にユーザー判断または追加調査が必要な項目）
 
-- sera-mcp(v1)の決済対象が実際にEthereum Sepoliaかどうかの最終確認（§1.2）
-- sera-mcp v1/v2の関係性（フォーク/後継/無関係）をSeraチームへ確認するかどうか（§1.2）
-- Claude Sonnet 4.6の東京リージョンIn-Region対応可否とトークン単価の詳細（§3）
-- Node.js 22.xランタイムのLambda提供状況（§7, S1）
+- **【新規・重要】sera-mcpのビルド済みバイナリをLambdaバンドルへ含める具体的な方法**（§9-A）。選択肢: (a) デプロイスクリプトでpinned commitをclone&buildしてLambdaバンドルに同梱, (b) Sera側にnpm公開を依頼, (c) 自前でforkしnpm/GitHub Packagesに公開。ユーザー判断が必要。
+
+- ~~sera-mcp(v1)の決済対象が実際にEthereum Sepoliaかどうか~~ → スパイクS3で解消済み（chainId 11155111を実コードで確認）
+- ~~Node.js 22.xランタイムのLambda提供状況~~ → スパイクS1で解消済み（[spikes/s1-lambda-node22/findings.md](./spikes/s1-lambda-node22/findings.md)、公式ドキュメントで確認）
+- ~~sera-mcp(v1)のdry-run/テストモードの有無~~ → スパイクS6で解消済み（`POLICY_DRY_RUN`環境変数、[spikes/s6-dry-run/findings.md](./spikes/s6-dry-run/findings.md)）
+- sera-mcp v1/v2の関係性（フォーク/後継/無関係）をSeraチームへ確認するかどうか（§1.2、未解消）
+- Claude Sonnet 4.6の東京リージョンIn-Region対応可否とトークン単価の詳細（§3、未解消。AWS Bedrock認証情報が必要なため本セッションでは検証不可）
+- Lambda内で`sera-mcp`を子プロセス起動する際のコールドスタート・メモリオーバーヘッド（§4.2、未解消。AWS環境での実測が必要）
+- Strands TS SDK（`@strands-agents/sdk`）からのBedrock実呼び出し・Privy embedded walletの署名互換性（S4/S5、未解消。AWS/Privyの認証情報が必要なため本セッションでは検証不可）

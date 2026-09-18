@@ -3,9 +3,19 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  '@reown/appkit': true
+  bufferutil: true
   core-js-pure: true
   esbuild: true
+  keccak: true
+  utf-8-validate: true
   workerd: true
 
 minimumReleaseAgeExclude:
   - knip@6.33.0
+  - '@aws-sdk/client-dynamodb@3.1135.0'
+  - '@aws-sdk/lib-dynamodb@3.1135.0'
+  - aws-cdk-lib@2.270.0
+  - viem@2.56.8
+  - '@aws-sdk/client-bedrock-runtime@3.1135.0'
+  - '@aws-sdk/token-providers@3.1135.0'

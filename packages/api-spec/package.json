@@ -2,13 +2,26 @@
   "name": "api-spec",
   "version": "1.0.0",
   "private": true,
-  "description": "",
-  "main": "index.js",
+  "description": "REST API契約(openapi.yaml)の正本と、そこから生成される型定義。",
+  "main": "generated/types.ts",
+  "types": "generated/types.ts",
+  "type": "module",
+  "exports": {
+    "./generated/types.js": "./generated/types.ts"
+  },
   "scripts": {
+    "generate": "openapi-typescript ./openapi.yaml -o ./generated/types.ts",
+    "generate:check": "pnpm run generate && git diff --exit-code -- generated/types.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.7.3"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "module"
+  "license": "ISC"
 }

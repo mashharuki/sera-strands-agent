@@ -31,17 +31,17 @@ description: "Task list template for feature implementation"
 
 **Purpose**: モノレポの新規ディレクトリ・依存関係の準備、および実装着手前に解消すべき技術的不確実性（research.md §8のスパイクS1〜S7）の検証。
 
-- [ ] T001 `plan.md` Project Structureに従い、`apps/backend/src/{agent,agent/tools,store,routes,auth}`、`apps/frontend/src/features/{chat,wallet,market,transactions}`、`docs/{architecture,blog}`、`specs/001-sera-protocol-chatbot/spikes/`のディレクトリを作成する
-- [ ] T002 [P] `apps/backend/package.json`に`@strands-agents/sdk`、DynamoDB SDK（`@aws-sdk/client-dynamodb`, `@aws-sdk/lib-dynamodb`）、sera-mcp接続に必要な依存（MCPクライアント、`viem`等）を追加する
-- [ ] T003 [P] `apps/frontend/package.json`に`@privy-io/react-auth`、`@tanstack/react-query`、`zustand`を追加する
-- [ ] T004 [P] `apps/cdk/package.json`にDynamoDB/Lambda Function URL関連のCDK L2コンストラクト依存を確認・追加する
-- [ ] T005 [P] スパイクS1: AWS LambdaのNode.js 22.xランタイム提供状況を公式ドキュメントで確認し、結果を`specs/001-sera-protocol-chatbot/spikes/s1-lambda-node22/findings.md`に記録する（合格条件: research.md §8 S1）
+- [X] T001 `plan.md` Project Structureに従い、`apps/backend/src/{agent,agent/tools,store,routes,auth}`、`apps/frontend/src/features/{chat,wallet,market,transactions}`、`docs/{architecture,blog}`、`specs/001-sera-protocol-chatbot/spikes/`のディレクトリを作成する
+- [X] T002 [P] `apps/backend/package.json`に`@strands-agents/sdk`、DynamoDB SDK（`@aws-sdk/client-dynamodb`, `@aws-sdk/lib-dynamodb`）、sera-mcp接続に必要な依存（MCPクライアント、`viem`等）を追加する
+- [X] T003 [P] `apps/frontend/package.json`に`@privy-io/react-auth`、`@tanstack/react-query`、`zustand`を追加する
+- [X] T004 [P] `apps/cdk/package.json`にDynamoDB/Lambda Function URL関連のCDK L2コンストラクト依存を確認・追加する
+- [X] T005 [P] スパイクS1: AWS LambdaのNode.js 22.xランタイム提供状況を公式ドキュメントで確認し、結果を`specs/001-sera-protocol-chatbot/spikes/s1-lambda-node22/findings.md`に記録する（合格条件: research.md §8 S1）
 - [ ] T006 [P] スパイクS2: `specs/001-sera-protocol-chatbot/spikes/s2-stream/`にLambda Function URLsレスポンスストリーミングの最小ハンドラーを実装し、ブラウザからトークン単位の逐次受信ができることを確認する（合格条件: research.md §8 S2）
 - [ ] T007 [P] スパイクS3: `specs/001-sera-protocol-chatbot/spikes/s3-sera-mcp-http/`で`sera-mcp`(v1)を`--transport http --stateless`で起動し、`get_quote`等を単発HTTPリクエストで呼び出せることを確認する（合格条件: research.md §8 S3）
 - [ ] T008 [P] スパイクS4: `specs/001-sera-protocol-chatbot/spikes/s4-strands-bedrock/`で`@strands-agents/sdk`から`jp.anthropic.claude-sonnet-4-6`等のBedrock推論プロファイルを指定した最小Agentを実行し、ダミーツール呼び出しが機能することを確認する（合格条件: research.md §8 S4）
 - [ ] T009 [P] スパイクS5: `specs/001-sera-protocol-chatbot/spikes/s5-privy-signature/`でPrivy embedded walletのクライアント側署名が、sera-mcpの`execute_swap`/`sendTransfer`が期待する署名形式と適合するかSepoliaテストネット上で確認する（ブロードキャストは行わない。合格条件: research.md §8 S5）
-- [ ] T010 [P] スパイクS6: `sera-mcp`(v1)のソースコードを直接確認し、dry-run/テストモードの有無を`specs/001-sera-protocol-chatbot/spikes/s6-dry-run/findings.md`に記録する（合格条件: research.md §8 S6）
-- [ ] T011 [P] スパイクS7: `specs/001-sera-protocol-chatbot/spikes/s7-openapi-gen/`でOpenAPI Generatorによる生成クライアントとHono側の型定義の整合性確認フローを試作する（合格条件: research.md §8 S7）
+- [X] T010 [P] スパイクS6: `sera-mcp`(v1)のソースコードを直接確認し、dry-run/テストモードの有無を`specs/001-sera-protocol-chatbot/spikes/s6-dry-run/findings.md`に記録する（合格条件: research.md §8 S6）
+- [X] T011 [P] スパイクS7: `specs/001-sera-protocol-chatbot/spikes/s7-openapi-gen/`でOpenAPI Generatorによる生成クライアントとHono側の型定義の整合性確認フローを試作する（合格条件: research.md §8 S7）
 
 **チェックポイント**: T005〜T011の結果、Technical Context（plan.md）の前提（Node.js 22.x、Lambda Function URLsストリーミング、sera-mcpのLambda内蔵実行、Strands+Bedrock疎通、Privy署名互換性）に致命的な問題がないことを確認してからPhase 2へ進む。問題が見つかった場合は`/speckit-plan`を再実行し、plan.md/research.mdを更新する。
 
@@ -51,24 +51,24 @@ description: "Task list template for feature implementation"
 
 **Purpose**: どのユーザーストーリーの実装にも必要な共通インフラ。**⚠️ このフェーズが完了するまで、いかなるユーザーストーリーの実装にも着手できない**。
 
-- [ ] T012 `apps/cdk/lib/data-stack.ts`に`data-model.md`のエンティティ（User/Wallet/Quote/ApprovalRequest/Transaction/ConversationMessage）を格納するDynamoDBテーブル（オンデマンド課金、Quote/ApprovalRequestのTTL属性を含む）を定義する
-- [ ] T013 `apps/cdk/lib/backend-stack.ts`にHono Lambda（`apps/backend`）+ Amazon API Gateway HTTP APIのコンストラクトを定義する（`research.md` §4.1: チャット以外のエンドポイント用）
-- [ ] T014 [P] `apps/cdk/lib/backend-stack.ts`に`/chat`用のLambda Function URL（`RESPONSE_STREAM`呼び出しモード）を定義する（`research.md` §4.1）
-- [ ] T015 [P] `apps/cdk/lib/frontend-stack.ts`にS3 + CloudFrontのフロントエンド配信コンストラクトを定義する
-- [ ] T016 `apps/backend/src/auth/privy.ts`にPrivy発行JWTを検証し、`userId`をリクエストコンテキストへ注入するHonoミドルウェアを実装する
-- [ ] T017 [P] `apps/backend/src/store/client.ts`にDynamoDB DocumentClientの共通初期化モジュールを実装する
-- [ ] T018 [P] `apps/backend/src/agent/sera-mcp-client.ts`に`sera-mcp`(v1)へのMCPクライアント（Streamable HTTP statelessモード、`external`署名モード前提）を実装する（`contracts/mcp-tools.md`準拠）
-- [ ] T019 `apps/backend/src/agent/errors.ts`に、sera-mcp呼び出し失敗（タイムアウト・エラーレスポンス・接続不可）を検出し、成功したかのように誤って扱わない共通エラー変換ヘルパーを実装する（FR-017）。`market.ts`・`transactions.ts`・エージェントツール群はこのヘルパーを経由してエラーをチャットへ伝える。T018完了後に着手
-- [ ] T020 [P] `apps/backend/src/agent/strands-client.ts`にStrands Agentのブートストラップ（Bedrock `BedrockModel`、モデルID設定を環境変数化）を実装する
-- [ ] T021 `apps/backend/src/store/idempotency.ts`にDynamoDB条件付き書き込みベースの冪等性ヘルパー（`attribute_not_exists`）を実装する（FR-012の共通基盤）
-- [ ] T022 `apps/backend/src/store/conversations.ts`に`ConversationMessage`エンティティのCRUDを実装する（`data-model.md`準拠）
-- [ ] T023 `apps/backend/src/routes/chat.ts`に`POST /chat`のストリーミング応答スケルトン（Strands Agent呼び出し、`ChatStreamEvent`のtoken/doneイベント送出のみ、ツール固有ロジックは各ストーリーで追加）を実装する
-- [ ] T024 `contracts/openapi.yaml`の内容を`packages/api-spec/openapi.yaml`へ配置し、OpenAPI GeneratorでTypeScriptクライアントを生成するnpmスクリプトを`packages/api-spec/package.json`に追加する
-- [ ] T025 [P] `packages/shared/src/index.ts`にAPIモデル（`Wallet`, `Quote`, `ApprovalRequest`, `Transaction`等）の共有型エクスポートを追加する
-- [ ] T026 `apps/frontend/src/main.tsx`（または相当のエントリポイント）にPrivy Providerと認証ガード（未ログイン時のリダイレクト、FR-019対応）を設定する
-- [ ] T027 [P] `apps/frontend/src/services/apiClient.ts`にTanStack Query + 生成クライアントのラッパーを実装する
-- [ ] T028 [P] `apps/frontend/src/store/session.ts`にzustandによるセッション/ウォレット状態ストアを実装する
-- [ ] T029 [P] `apps/frontend/src/features/chat/ChatShell.tsx`にメッセージ一覧・入力欄・ストリーミング逐次表示を行う基本チャットUIシェルを実装する
+- [X] T012 `apps/cdk/lib/data-stack.ts`に`data-model.md`のエンティティ（User/Wallet/Quote/ApprovalRequest/Transaction/ConversationMessage）を格納するDynamoDBテーブル（オンデマンド課金、Quote/ApprovalRequestのTTL属性を含む）を定義する
+- [X] T013 `apps/cdk/lib/backend-stack.ts`にHono Lambda（`apps/backend`）+ Amazon API Gateway HTTP APIのコンストラクトを定義する（`research.md` §4.1: チャット以外のエンドポイント用）
+- [X] T014 [P] `apps/cdk/lib/backend-stack.ts`に`/chat`用のLambda Function URL（`RESPONSE_STREAM`呼び出しモード）を定義する（`research.md` §4.1）
+- [X] T015 [P] `apps/cdk/lib/frontend-stack.ts`にS3 + CloudFrontのフロントエンド配信コンストラクトを定義する
+- [X] T016 `apps/backend/src/auth/privy.ts`にPrivy発行JWTを検証し、`userId`をリクエストコンテキストへ注入するHonoミドルウェアを実装する
+- [X] T017 [P] `apps/backend/src/store/client.ts`にDynamoDB DocumentClientの共通初期化モジュールを実装する
+- [X] T018 [P] `apps/backend/src/agent/sera-mcp-client.ts`に`sera-mcp`(v1)へのMCPクライアント（Streamable HTTP statelessモード、`external`署名モード前提）を実装する（`contracts/mcp-tools.md`準拠）
+- [X] T019 `apps/backend/src/agent/errors.ts`に、sera-mcp呼び出し失敗（タイムアウト・エラーレスポンス・接続不可）を検出し、成功したかのように誤って扱わない共通エラー変換ヘルパーを実装する（FR-017）。`market.ts`・`transactions.ts`・エージェントツール群はこのヘルパーを経由してエラーをチャットへ伝える。T018完了後に着手
+- [X] T020 [P] `apps/backend/src/agent/strands-client.ts`にStrands Agentのブートストラップ（Bedrock `BedrockModel`、モデルID設定を環境変数化）を実装する
+- [X] T021 `apps/backend/src/store/idempotency.ts`にDynamoDB条件付き書き込みベースの冪等性ヘルパー（`attribute_not_exists`）を実装する（FR-012の共通基盤）
+- [X] T022 `apps/backend/src/store/conversations.ts`に`ConversationMessage`エンティティのCRUDを実装する（`data-model.md`準拠）
+- [X] T023 `apps/backend/src/routes/chat.ts`に`POST /chat`のストリーミング応答スケルトン（Strands Agent呼び出し、`ChatStreamEvent`のtoken/doneイベント送出のみ、ツール固有ロジックは各ストーリーで追加）を実装する
+- [X] T024 `contracts/openapi.yaml`の内容を`packages/api-spec/openapi.yaml`へ配置し、`openapi-typescript`で型定義を生成するnpmスクリプトを`packages/api-spec/package.json`に追加する（スパイクS7の決定により、Java依存の`openapi-generator-cli`ではなくZero-Javaの`openapi-typescript`+`openapi-fetch`を採用。`research.md` §6.2参照）
+- [X] T025 [P] `packages/shared/src/index.ts`にAPIモデル（`Wallet`, `Quote`, `ApprovalRequest`, `Transaction`等）の共有型エクスポートを追加する
+- [X] T026 `apps/frontend/src/main.tsx`（または相当のエントリポイント）にPrivy Providerと認証ガード（未ログイン時のリダイレクト、FR-019対応）を設定する
+- [X] T027 [P] `apps/frontend/src/services/apiClient.ts`にTanStack Query + 生成クライアントのラッパーを実装する
+- [X] T028 [P] `apps/frontend/src/store/session.ts`にzustandによるセッション/ウォレット状態ストアを実装する
+- [X] T029 [P] `apps/frontend/src/features/chat/ChatShell.tsx`にメッセージ一覧・入力欄・ストリーミング逐次表示を行う基本チャットUIシェルを実装する
 
 **チェックポイント**: Phase 2完了時点で、認証済みユーザーがログインし、空のチャット画面が表示され、`POST /chat`にメッセージを送るとストリーミングでダミー応答が返る状態になっている。以降、Phase 3以降は各ユーザーストーリーごとに独立して着手できる。
 

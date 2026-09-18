@@ -2,13 +2,17 @@
   "name": "shared",
   "version": "1.0.0",
   "private": true,
-  "description": "",
-  "main": "index.js",
+  "description": "apps/backend と apps/frontend で共有するAPIモデル型。",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "dependencies": {
+    "api-spec": "workspace:*"
+  },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "module"
+  "license": "ISC"
 }
