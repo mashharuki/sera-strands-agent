@@ -10,7 +10,9 @@
     "knip": "knip",
     "cdk": "pnpm --filter cdk",
     "backend": "pnpm --filter backend",
-    "frontend": "pnpm --filter frontend"
+    "frontend": "pnpm --filter frontend",
+    "api-spec": "pnpm --filter api-spec",
+    "shared": "pnpm --filter shared"
   },
   "keywords": [
     "webmcp",
