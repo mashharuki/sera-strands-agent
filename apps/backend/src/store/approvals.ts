@@ -40,6 +40,8 @@ export interface ApprovalRequestRecord {
    * （T059/US5実装時に追加）。
    */
   signPayload?: unknown;
+  /** permitが必要なswapで、追加でウォレット署名すべきEIP-712（Quote.permitPayloadからコピー）。 */
+  permitPayload?: unknown;
 }
 
 function approvalKey(approvalId: string) {

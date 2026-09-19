@@ -36,12 +36,26 @@ export function useSignAndConfirmSwap() {
           approval.signPayload as Parameters<typeof signTypedData>[0],
         );
 
+        // 入力トークンがEIP-2612 permitを要求する場合は、そのpermitにも署名する。
+        // 署名対象はサーバーが承認時に保存したもので、サーバー側で署名者を検証してからSeraへ送る。
+        const permitSignature = approval.permitPayload
+          ? (
+              await signTypedData(
+                approval.permitPayload as Parameters<typeof signTypedData>[0],
+              )
+            ).signature
+          : undefined;
+
         setState({ status: "confirming" });
         const client = createApiClient(getAccessToken);
         const { data, error } = await client.POST(
           "/transactions/swap/confirm",
           {
-            body: { approvalId: approval.approvalId, signature },
+            body: {
+              approvalId: approval.approvalId,
+              signature,
+              ...(permitSignature && { permitSignature }),
+            },
           },
         );
         if (error || !data) {

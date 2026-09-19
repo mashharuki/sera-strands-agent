@@ -47,10 +47,10 @@ export function createSwapIntentTool(
             "見積もりの有効期限が切れています。get_swap_quoteで取り直してください",
         };
       }
-      if (quote.requiresPermit) {
+      if (quote.requiresPermit && !quote.permitPayload) {
         return {
           error:
-            "このトークンの見積もりはEIP-2612 permitの追加署名が必要で、現在は未対応です",
+            "この見積もりはpermit署名が必要ですが、署名内容を取得できませんでした。見積もりを取り直してください",
         };
       }
       const wallet = await getWallet(userId);
@@ -75,6 +75,7 @@ export function createSwapIntentTool(
           estimatedFee: quote.estimatedFee,
         },
         signPayload: quote.signPayload,
+        ...(quote.requiresPermit && { permitPayload: quote.permitPayload }),
       });
       onApprovalCreated(approvalId);
 

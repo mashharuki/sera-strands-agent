@@ -1,8 +1,10 @@
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { mockClient } from "aws-sdk-client-mock";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { docClient } from "../../src/store/client.js";
+import { permitFor, signPermit } from "../helpers/permit";
 
 process.env.PRIVY_APP_ID = "test-app-id";
 process.env.PRIVY_VERIFICATION_KEY =
@@ -34,6 +36,8 @@ vi.mock("../../src/agent/onchain-balances.js", () => ({
 }));
 
 const { app } = await import("../../src/index.js");
+const userWallet = privateKeyToAccount(generatePrivateKey());
+const attacker = privateKeyToAccount(generatePrivateKey());
 const ddbMock = mockClient(docClient);
 
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -68,6 +72,7 @@ function quoteItem(overrides: Record<string, unknown> = {}) {
 function mockLookups(opts: {
   approval?: Record<string, unknown>;
   quote?: Record<string, unknown>;
+  walletAddress?: string;
 }) {
   ddbMock.on(GetCommand).callsFake((input: { Key: { pk: string } }) => {
     const pk = input.Key.pk;
@@ -76,20 +81,87 @@ function mockLookups(opts: {
     if (pk.startsWith("QUOTE#")) return { Item: opts.quote ?? quoteItem() };
     if (pk.startsWith("USER#"))
       return {
-        Item: { userId: "user-a", address: "0xUserA", chainId: 11155111 },
+        Item: {
+          userId: "user-a",
+          address: opts.walletAddress ?? "0xUserA",
+          chainId: 11155111,
+        },
       };
     return {};
   });
   ddbMock.on(UpdateCommand).resolves({});
 }
 
-function confirm() {
+function confirm(extra: Record<string, unknown> = {}) {
   return app.request("/transactions/swap/confirm", {
     method: "POST",
     headers: { Authorization: "Bearer t", "Content-Type": "application/json" },
-    body: JSON.stringify({ approvalId: "appr-1", signature: "0xsig" }),
+    body: JSON.stringify({
+      approvalId: "appr-1",
+      signature: "0xsig",
+      ...extra,
+    }),
   });
 }
+
+describe("POST /transactions/swap/confirm with EIP-2612 permit", () => {
+  beforeEach(() => {
+    ddbMock.reset();
+    executeSwapCalls.length = 0;
+  });
+
+  it("should reject and not execute when the permit signature is missing", async () => {
+    const permit = permitFor(userWallet.address);
+    mockLookups({
+      approval: approvalItem({ permitPayload: permit }),
+      walletAddress: userWallet.address,
+    });
+    ddbMock.on(PutCommand).resolves({});
+
+    const res = await confirm();
+
+    expect(res.status).toBe(400);
+    expect(executeSwapCalls).toHaveLength(0);
+  });
+
+  it("should reject a permit signed by someone else without calling Sera", async () => {
+    const permit = permitFor(userWallet.address);
+    mockLookups({
+      approval: approvalItem({ permitPayload: permit }),
+      walletAddress: userWallet.address,
+    });
+    ddbMock.on(PutCommand).resolves({});
+
+    const res = await confirm({
+      permitSignature: await signPermit(attacker, permit),
+    });
+
+    expect(res.status).toBe(400);
+    expect(executeSwapCalls).toHaveLength(0);
+  });
+
+  it("should forward the verified permit signature and its deadline to Sera", async () => {
+    const permit = permitFor(userWallet.address);
+    const permitSignature = await signPermit(userWallet, permit);
+    mockLookups({
+      approval: approvalItem({ permitPayload: permit }),
+      walletAddress: userWallet.address,
+    });
+    ddbMock.on(PutCommand).resolves({});
+
+    const res = await confirm({ permitSignature });
+
+    expect(res.status).toBe(202);
+    expect(executeSwapCalls).toEqual([
+      {
+        uuid: "quote-1",
+        signature: "0xsig",
+        permit_signature: permitSignature,
+        permit_deadline: 1_900_000_000,
+      },
+    ]);
+  });
+});
 
 describe("POST /transactions/swap/confirm", () => {
   beforeEach(() => {

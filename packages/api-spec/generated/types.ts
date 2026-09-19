@@ -339,11 +339,15 @@ export interface components {
             expiresAt?: string;
             /** @description swapの場合はウォレットで署名すべきEIP-712ペイロード（sera-mcpの get_quoteが返すroute_paramsをそのまま）。送金の場合は未署名トランザクション。 */
             signPayload?: unknown;
+            /** @description swapで入力トークンがEIP-2612 permitを要求する場合のみ存在する、追加でウォレット署名 すべきEIP-712 typed data（Seraの見積の permit.eip712）。署名は confirm の permitSignature として渡す。 */
+            permitPayload?: unknown;
         };
         ConfirmTransactionRequest: {
             approvalId: string;
             /** @description Privy embedded walletによるクライアント側署名（EIP-712またはraw tx署名） */
             signature: string;
+            /** @description ApprovalRequest.permitPayload がある場合のみ必須。そのEIP-712へのウォレット署名 */
+            permitSignature?: string;
         };
         /** @enum {string} */
         ChainState: "broadcast_pending" | "confirmed_success" | "confirmed_failed" | "unknown";

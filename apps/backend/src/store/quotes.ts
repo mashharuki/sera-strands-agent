@@ -20,11 +20,10 @@ export interface QuoteRecord {
    * 通り実疎通確認ができていないため、加工・解釈をせずクライアントへ引き渡す。
    */
   signPayload?: unknown;
-  /**
-   * 見積もりがEIP-2612 permitの追加署名を要求する場合true。permit署名フローは
-   * 未対応のため、この場合swapのprepareを拒否する（署名不足で失敗する前に明示する）。
-   */
+  /** 見積もりがEIP-2612 permitの追加署名を要求する場合true（permit署名フローに対応済み）。 */
   requiresPermit?: boolean;
+  /** `requiresPermit`のとき、ウォレットで署名すべきEIP-712（Seraの`permit.eip712`）。 */
+  permitPayload?: unknown;
 }
 
 function quoteKey(quoteId: string) {

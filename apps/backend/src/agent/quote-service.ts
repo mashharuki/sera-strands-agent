@@ -1,5 +1,6 @@
 import { type QuoteRecord, saveQuote } from "../store/quotes.js";
 import { callSeraToolSafely } from "./errors.js";
+import { parsePermitTypedData } from "./permit-verify.js";
 import { buildSwapTypedData, getQuote } from "./sera-tools.js";
 
 const FALLBACK_TTL_SECONDS = 120;
@@ -50,6 +51,23 @@ export async function issueQuote(args: {
       ? String(minOut / input)
       : "";
 
+  // permit_required=false（許可額が足りている等）なら追加署名は不要。
+  const permitEnvelope = raw.permit as
+    | { permit_required?: boolean; eip712?: unknown }
+    | null
+    | undefined;
+  const needsPermit =
+    permitEnvelope != null && permitEnvelope.permit_required !== false;
+  const permitPayload = needsPermit
+    ? parsePermitTypedData(permitEnvelope?.eip712)
+    : undefined;
+  if (needsPermit && !permitPayload) {
+    // permitが必要なのに署名対象を解釈できない場合は、黙って進めずに失敗させる。
+    throw new Error(
+      "Sera quote requires a permit but its EIP-712 payload could not be parsed",
+    );
+  }
+
   const quote: QuoteRecord = {
     quoteId: raw.uuid,
     userId: args.userId,
@@ -65,7 +83,8 @@ export async function issueQuote(args: {
           : JSON.stringify(raw.fee_breakdown),
     expiresAt: toEpochSeconds(raw.expires_at),
     status: "issued",
-    requiresPermit: raw.permit != null,
+    requiresPermit: needsPermit,
+    ...(permitPayload && { permitPayload }),
     signPayload: await buildSwapTypedData(raw.route_params),
   };
   await saveQuote(quote);

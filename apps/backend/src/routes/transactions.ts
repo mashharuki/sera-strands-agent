@@ -16,6 +16,10 @@ import {
   broadcastSignedTransfer,
   buildUnsignedTransfer,
 } from "../agent/onchain-transfer.js";
+import {
+  parsePermitTypedData,
+  verifyPermitSignature,
+} from "../agent/permit-verify.js";
 import { executeSwap, resolveToken } from "../agent/sera-tools.js";
 import { verifySignedTransfer } from "../agent/tx-verify.js";
 import type { AuthedVariables } from "../auth/privy.js";
@@ -96,12 +100,12 @@ transactionRoutes.post("/transactions/swap/prepare", async (c) => {
       409,
     );
   }
-  if (quote.requiresPermit) {
+  if (quote.requiresPermit && !quote.permitPayload) {
     return c.json(
       {
-        code: "PERMIT_NOT_SUPPORTED",
+        code: "PERMIT_UNAVAILABLE",
         message:
-          "このトークンの見積もりはEIP-2612 permitの追加署名が必要で、現在は未対応です",
+          "この見積もりはpermit署名が必要ですが、署名内容を取得できませんでした。見積もりを取り直してください",
       },
       422,
     );
@@ -130,6 +134,7 @@ transactionRoutes.post("/transactions/swap/prepare", async (c) => {
       slippage: quote.slippage,
     },
     signPayload: quote.signPayload,
+    ...(quote.requiresPermit && { permitPayload: quote.permitPayload }),
   });
   return c.json(toApiApproval(approval), 201);
 });
@@ -259,13 +264,15 @@ async function confirmApproval(
     approval: ApprovalRequestRecord,
     signature: string,
     walletAddress: string,
+    permitSignature?: string,
   ) => Promise<{ txHash?: string } | { rejected: string }>,
 ) {
   const userId = c.get("userId");
   const body = await c.req.json().catch(() => ({}));
-  const { approvalId, signature } = body as {
+  const { approvalId, signature, permitSignature } = body as {
     approvalId?: string;
     signature?: string;
+    permitSignature?: string;
   };
   if (!approvalId) {
     return c.json(
@@ -356,7 +363,12 @@ async function confirmApproval(
   }
 
   try {
-    const result = await execute(approval, signature, wallet.address);
+    const result = await execute(
+      approval,
+      signature,
+      wallet.address,
+      permitSignature,
+    );
     if ("rejected" in result) {
       // 検証で弾いた場合もbroadcastには至っていないためキーを解放する。
       await releaseIdempotencyKey(approvalId);
@@ -397,12 +409,32 @@ function pickTxHash(result: unknown): string | undefined {
 
 /** FR-009, FR-010, FR-012: 承認・署名済みのswapを実行する。 */
 transactionRoutes.post("/transactions/swap/confirm", (c) =>
-  confirmApproval(c, "swap", async (approval, signature) => {
-    const result = await callSeraToolSafely("sera.execute_swap", () =>
-      executeSwap(approval.quoteId as string, signature),
-    );
-    return { txHash: pickTxHash(result) };
-  }),
+  confirmApproval(
+    c,
+    "swap",
+    async (approval, signature, walletAddress, permitSignature) => {
+      let permit: { signature: string; deadline: number } | undefined;
+      if (approval.permitPayload) {
+        const typed = parsePermitTypedData(approval.permitPayload);
+        if (!typed) return { rejected: "permitの内容を解釈できません" };
+        if (!permitSignature) {
+          return { rejected: "permitへのウォレット署名が必要です" };
+        }
+        // Sera送信前に、permit署名がユーザー自身のウォレットのものであることを検証する（FR-010）。
+        const verified = await verifyPermitSignature(
+          typed,
+          permitSignature,
+          walletAddress,
+        );
+        if (!verified.ok) return { rejected: verified.reason };
+        permit = { signature: permitSignature, deadline: verified.deadline };
+      }
+      const result = await callSeraToolSafely("sera.execute_swap", () =>
+        executeSwap(approval.quoteId as string, signature, permit),
+      );
+      return { txHash: pickTxHash(result) };
+    },
+  ),
 );
 
 /**

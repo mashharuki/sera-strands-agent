@@ -14,7 +14,7 @@ export interface SeraQuote {
   route_params: Record<string, unknown>;
   fee_breakdown?: unknown;
   expires_at?: string | number;
-  /** 非nullの場合はEIP-2612 permitの追加署名が必要（現状未対応）。 */
+  /** 非nullの場合はEIP-2612 permitの追加署名が必要（`eip712`を署名する）。 */
   permit?: unknown | null;
   from?: { symbol: string; address: string; decimals: number };
   to?: { symbol: string; address: string; decimals: number };
@@ -43,8 +43,20 @@ export const getQuote = (args: {
     owner_address: args.ownerAddress,
   }) as Promise<SeraQuote>;
 
-export const executeSwap = (uuid: string, signature: string) =>
-  callSeraTool("sera.execute_swap", { uuid, signature });
+/** `permit`は、見積がEIP-2612 permitを要求した場合のみ渡す（署名と、その期限）。 */
+export const executeSwap = (
+  uuid: string,
+  signature: string,
+  permit?: { signature: string; deadline: number },
+) =>
+  callSeraTool("sera.execute_swap", {
+    uuid,
+    signature,
+    ...(permit && {
+      permit_signature: permit.signature,
+      permit_deadline: permit.deadline,
+    }),
+  });
 
 /** 実際の板ではなく、見積もりの多点プローブによる合成板（registry.ts sera.infer_book）。 */
 export const inferBook = (base: string, quote: string) =>

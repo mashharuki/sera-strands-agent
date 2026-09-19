@@ -130,7 +130,7 @@ pnpm --filter api-spec run postman:generate # Postman コレクションを再�
 ## テスト
 
 ```bash
-pnpm --filter backend test     # vitest（59 件）
+pnpm --filter backend test     # vitest（68 件）
 pnpm --filter cdk test         # jest（8 件、CloudFormation アサーション）
 pnpm --filter frontend lint
 pnpm --filter frontend build   # tsc -b && vite build（型チェック含む）
@@ -175,7 +175,7 @@ pnpm stack:destroy -- --stage dev
 
 | 項目 | 状態 | 根拠 |
 | --- | --- | --- |
-| backend ユニットテスト 59 件 | ✅ 通過 | 実行確認 |
+| backend ユニットテスト 68 件 | ✅ 通過 | 実行確認 |
 | CDK アサーション 8 件 / synth | ✅ 通過 | 実行確認 |
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
@@ -198,7 +198,7 @@ pnpm stack:destroy -- --stage dev
   - **送金**: ERC-20 の `transfer` を viem で組み立て、ユーザーが署名した raw tx を RPC へ直接送る（承認内容との一致は送信前に検証）。状態はオンチェーンのレシートで確認。
   - **swap の決済状態**: 公開の照会手段が無く、`sera.settlement_status` は認証必須です。キー未設定の間、swap の状態は `broadcast_pending` のままで、`statusCheckError` が付きます（成功と推測しません）。`swap` の実行結果は Sera の応答（`trade_id`）と、残高で確認してください。
 - 資格情報のローダー（Secrets Manager → sera-mcp）は実装済み。未設定でも sera-mcp は起動します。
-- EIP-2612 permit が必要な見積は未対応（`PERMIT_NOT_SUPPORTED` で拒否）。
+- EIP-2612 permit が必要な見積（例: MYRT）は、確認画面で swap と permit の**2回署名**する方式に対応（サーバーで permit 署名がユーザー自身のものか検証してから Sera へ送信）。ユニットテスト済みで、Sera への実送信は未検証。
 - 実行環境はサーバー側の運用者資格情報に依存する Sera ツールが多い。
 - Sepolia のみ。メインネットでの利用は想定していません。
 - 料金: Lambda / API Gateway / DynamoDB / S3 / CloudFront / Secrets Manager / Bedrock（トークン従量）が発生します。**実測前のため概算額は記載しません**。
