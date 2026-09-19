@@ -42,6 +42,11 @@ export function ChatShell() {
     ]);
     setIsStreaming(true);
 
+    const showAssistantText = (text: string) =>
+      setLines((prev) =>
+        prev.map((l) => (l.id === assistantLineId ? { ...l, text } : l)),
+      );
+
     try {
       const token = await getAccessToken();
       const chatUrl = import.meta.env.VITE_CHAT_URL as string | undefined;
@@ -55,7 +60,11 @@ export function ChatShell() {
         },
         body: JSON.stringify({ sessionId, message }),
       });
-      if (!res.body) throw new Error("no response body");
+      if (!res.ok || !res.body) {
+        throw new Error(
+          `チャットの呼び出しに失敗しました (HTTP ${res.status})`,
+        );
+      }
 
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
       let buffer = "";
@@ -76,6 +85,12 @@ export function ChatShell() {
               ),
             );
           }
+          if (event.eventType === "error") {
+            const { message: errorMessage } = event.payload as unknown as {
+              message?: string;
+            };
+            showAssistantText(`エラー: ${errorMessage ?? "不明なエラー"}`);
+          }
           if (event.eventType === "approval_required") {
             const { approvalId } = event.payload as unknown as {
               approvalId: string;
@@ -84,6 +99,12 @@ export function ChatShell() {
           }
         }
       }
+    } catch (error) {
+      // 通信失敗などを画面に出す（黙って何も表示しない状態にしない）。
+      console.error("[chat] request failed", error);
+      showAssistantText(
+        `エラー: ${error instanceof Error ? error.message : "通信に失敗しました"}`,
+      );
     } finally {
       setIsStreaming(false);
     }

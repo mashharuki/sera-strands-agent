@@ -66,7 +66,7 @@ sera-mcp の `send_transfer` は受け取った raw トランザクションを*
 - ネイティブ依存の `better-sqlite3` は、履歴DB用（`SERA_HISTORY_DB` 未設定なら使われない）で、Lambda(Linux) には mac で作ったバイナリを持ち込めない。そこで「呼ばれたら明示的に失敗するスタブ」に差し替えてバンドル
 - CDK の `commandHooks.afterBundling` で Lambda のコード直下に同梱し、子プロセスとして起動（`127.0.0.1` のループバックのみ）
 
-`cdk synth` で、2 つの Lambda のアセットに `sera-mcp.mjs` が入ることは確認しました。**バンドルの実起動は未確認です。** `TODO(実測)`
+`cdk synth` で、2 つの Lambda のアセットに `sera-mcp.mjs` が入ることは確認しました。Lambda 上での起動は実測で確認できました（`sera-mcp ready`、55 ツール、ネットワーク sepolia、署名モード external）。ただし最初のデプロイでは、ESM バンドル内の CJS 依存が `Dynamic require of "child_process" is not supported` で起動時に落ちました。`banner` で `createRequire` を注入して解消し、その間 API Gateway が CORS ヘッダーなしの 502 を返すため、症状は「CORS エラー」に見えました（原因はログでしか分かりません）。
 
 ### 3.2 v2 が出ていたが v1 を選んだ
 
@@ -191,3 +191,10 @@ README を参照してください。デプロイは `pnpm stack:deploy -- --sta
 - [sera-cx/sera-mcp](https://github.com/sera-cx/sera-mcp)（MIT、固定コミット `d6f50c1`）
 - Strands Agents TypeScript SDK、Hono、Privy、AWS CDK
 - 調査・設計の詳細: `specs/001-sera-protocol-chatbot/`
+
+## 付録: デプロイして初めて分かったこと（実測）
+
+- **CORS エラーの正体は Lambda の起動失敗**だった（上記 3.1）。API Gateway の 502 にはCORSヘッダーが付かない。
+- **Privy の「Verification key」と「App Secret」の取り違え**。`PRIVY_VERIFICATION_KEY` に App Secret を入れると全 API が 401 になる。App Secret は秘密なので、環境変数に入れてしまうと Lambda の設定や CloudFormation に平文で残る。コードで PEM 公開鍵かどうかを検査し、誤設定なら明示的に失敗させるようにした。
+- **エラーの握りつぶし**。原因をログに出さず 401/502 だけ返す作りだと、切り分けに時間がかかった。失敗の種別とツール名をログに残すようにした。フロントエンドも、エラーイベントを表示しないと「何も返ってこない」ように見える。
+- **Sera の `/balances` は認証必須**。認証なしで 401 を確認（sera-mcp のソースでも `auth: true`）。swap の見積・実行や市場情報は認証不要。残高は viem でオンチェーンから読む方式に変更した（Vault 内残高は対象外）。

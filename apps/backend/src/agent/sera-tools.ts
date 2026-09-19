@@ -1,3 +1,4 @@
+import { readOnchainBalances } from "./onchain-balances.js";
 import { callSeraTool, readSeraResource } from "./sera-mcp-client.js";
 
 /**
@@ -19,8 +20,12 @@ export interface SeraQuote {
   human?: { input?: string; min_output?: string };
 }
 
+/**
+ * 残高はオンチェーンから読む（`sera.get_balances`はAPI Key必須のため。onchain-balances.ts参照）。
+ * 戻り値は `{ balances: [{ token, amount, decimals }] }`。
+ */
 export const getBalances = (ownerAddress: string) =>
-  callSeraTool("sera.get_balances", { owner_address: ownerAddress });
+  readOnchainBalances(ownerAddress, resolveToken);
 
 /** `owner_address`は非simulateの見積もりでは必須（core.ts getQuote）。 */
 export const getQuote = (args: {

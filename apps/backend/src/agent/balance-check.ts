@@ -14,9 +14,7 @@ interface RawBalanceEntry {
 
 /**
  * FR-016, FR-020: swap・送金の実行前に、対象トークンとネットワーク手数料(ガス代)の
- * 残高を確認する。sera-mcpの`get_balances`の正確なレスポンス形状は実疎通確認が
- * できていないため（research.md §1.3）、`token`/`symbol`と`amount`という
- * 妥当な想定のもとで緩く解釈する。ガス代トークンは`ETH`という名前を仮定する
+ * 残高を確認する。残高はオンチェーンから読む（onchain-balances.ts）ため、応答は`token`と`amount`を持つ。ガス代トークンは`ETH`という名前を仮定する
  * （Ethereum Sepolia想定）。この前提は実装フェーズでの実疎通確認が必要。
  */
 export async function checkSufficientBalance(
@@ -24,7 +22,7 @@ export async function checkSufficientBalance(
   token: string,
   amount: string,
 ): Promise<BalanceCheckResult> {
-  const raw = (await callSeraToolSafely("sera.get_balances", () =>
+  const raw = (await callSeraToolSafely("onchain.get_balances", () =>
     getBalances(address),
   )) as { balances?: RawBalanceEntry[] } | RawBalanceEntry[];
 

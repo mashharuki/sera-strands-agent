@@ -20,6 +20,11 @@ export async function callSeraToolSafely<T>(
   try {
     return await fn();
   } catch (err) {
+    // 原因（上位には汎用文言しか返さない）を運用側で追えるよう、ツール名と原因を記録する。
+    console.error("[sera-tool] call failed", {
+      toolName,
+      cause: err instanceof Error ? err.message : String(err),
+    });
     throw new SeraToolError(
       `sera-mcpツール "${toolName}" の呼び出しに失敗しました`,
       err,

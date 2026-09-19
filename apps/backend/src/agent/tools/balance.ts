@@ -25,7 +25,7 @@ export function createBalanceTool(userId: string) {
         };
       }
       try {
-        const balances = await callSeraToolSafely("sera.get_balances", () =>
+        const balances = await callSeraToolSafely("onchain.get_balances", () =>
           getBalances(wallet.address),
         );
         return { hasWallet: true, address: wallet.address, balances };

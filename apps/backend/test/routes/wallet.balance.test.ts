@@ -17,15 +17,16 @@ vi.mock("@privy-io/node", () => ({
   ),
 }));
 
-const seraCallLog: Array<{ toolName: string; args: Record<string, unknown> }> =
-  [];
+const balanceCallLog: string[] = [];
+vi.mock("../../src/agent/onchain-balances.js", () => ({
+  readOnchainBalances: vi.fn(async (owner: string) => {
+    balanceCallLog.push(owner);
+    return { balances: [{ token: "USDC", amount: "10", decimals: 6 }] };
+  }),
+}));
 vi.mock("../../src/agent/sera-mcp-client.js", () => ({
-  callSeraTool: vi.fn(
-    async (toolName: string, args: Record<string, unknown>) => {
-      seraCallLog.push({ toolName, args });
-      return { balances: [{ token: "USDC", amount: "10" }] };
-    },
-  ),
+  callSeraTool: vi.fn(),
+  readSeraResource: vi.fn(),
 }));
 
 const { app } = await import("../../src/index.js");
@@ -35,7 +36,7 @@ const ddbMock = mockClient(docClient);
 describe("GET /wallet/balance", () => {
   beforeEach(() => {
     ddbMock.reset();
-    seraCallLog.length = 0;
+    balanceCallLog.length = 0;
   });
 
   it("should return 404 and suggest wallet creation when the user has no wallet (FR-003)", async () => {
@@ -61,8 +62,6 @@ describe("GET /wallet/balance", () => {
     );
 
     expect(res.status).toBe(200);
-    expect(seraCallLog).toHaveLength(1);
-    expect(seraCallLog[0].toolName).toBe("sera.get_balances");
-    expect(seraCallLog[0].args.owner_address).toBe("0xUserAAddress");
+    expect(balanceCallLog).toEqual(["0xUserAAddress"]);
   });
 });

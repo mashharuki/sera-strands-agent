@@ -60,7 +60,7 @@ walletRoutes.get("/wallet/balance", async (c) => {
     );
   }
   try {
-    const balances = await callSeraToolSafely("sera.get_balances", () =>
+    const balances = await callSeraToolSafely("onchain.get_balances", () =>
       getBalances(wallet.address),
     );
     return c.json({ walletAddress: wallet.address, balances }, 200);

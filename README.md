@@ -5,7 +5,7 @@ AWS CDK で構築する、フルサーバーレスな **Sera Protocol AI エー�
 
 > **重要: 検証状況について**
 > このリポジトリの実装は「型チェック・ユニットテスト・CDK synth」までは確認済みですが、
-> **AWS へのデプロイ、Bedrock / Privy / Sera（sera-mcp）との実接続、ブラウザ E2E は未検証**です。
+> **AWS へのデプロイ、Privy のログイン、sera-mcp の Lambda 上での起動は確認済み**ですが、**Bedrock（Nova）でのチャット、残高・見積・swap・送金の実動作、ブラウザ E2E は未検証**です。
 > 詳細は [検証状況](#検証状況) を参照してください。未検証の項目を動作確認済みとして扱わないでください。
 
 ## 完成時にできること
@@ -79,7 +79,7 @@ docs/         設計メモ、アーキテクチャ図、ブログ原稿
 - AWS アカウントと認証済みの AWS CLI（デプロイ時のみ）。Bedrock で使用するモデルへのアクセス有効化
 - [Privy](https://privy.io) のアプリ（App ID と検証キー）
 - Sepolia の RPC URL
-- Sera の運用者資格情報（API キー/シークレット）※ 取得方法は sera-mcp 側のドキュメントを参照
+- （任意）Sera の API キー/シークレット。**swap の見積・実行と市場情報は不要**、残高もオンチェーンから読むため不要です。送金の組み立て・決済状態の照会など、Sera の認証付き API を使う機能でのみ必要です（[制約](#制約未対応事項)）
 - Sepolia のテストトークン（残高が不足している場合、アプリは faucet の案内を表示します）
 
 ## セットアップ
@@ -107,12 +107,13 @@ cp .env.example .env       # Privy の App ID / 検証キー、Sepolia の RPC U
 | `VITE_API_URL` | frontend（ビルド時） | API Gateway の URL（`pnpm stack:deploy` が自動設定） |
 | `VITE_CHAT_URL` | frontend（ビルド時） | Function URL（同上） |
 | `PRIVY_APP_ID`, `PRIVY_VERIFICATION_KEY` | backend（デプロイ時に環境から引き継ぎ） | JWT 検証 |
-| `SEPOLIA_RPC_URL` | backend | 送金トランザクションの検証・レシート確認 |
+| `SEPOLIA_RPC_URL` | backend | **残高の取得（オンチェーン読み取り）**、送金トランザクションの検証・レシート確認 |
+| `BALANCE_SYMBOLS` | backend（任意） | 残高を表示する Sera トークンのシンボル（カンマ区切り、既定 `USDC,XSGD,MYRT`） |
 | `BEDROCK_MODEL_ID`, `BEDROCK_REGION` | backend | Bedrock のモデル/リージョン。既定は Amazon Nova 2 Lite（`jp.amazon.nova-2-lite-v1:0`, `ap-northeast-1`）。他モデルに変える場合は CDK の IAM 許可も要変更 |
 | `POLICY_DRY_RUN` | backend | sera-mcp のドライラン |
 | `TABLE_NAME`, `SERA_NETWORK`, `SERA_MCP_BIN`, `SERA_SECRET_ID` | backend | CDK が自動設定 |
 
-秘密情報（Sera の API キー/シークレット）は **環境変数・コード・テンプレートに書きません**。スタックが作る Secrets Manager の空シークレットに、デプロイ後にご自身で設定します（[デプロイ](#デプロイ動作確認削除)）。
+秘密情報（Sera の API キー/シークレット。使う場合のみ）は **環境変数・コード・テンプレートに書きません**。スタックが作る Secrets Manager の空シークレットに、デプロイ後にご自身で設定します（[デプロイ](#デプロイ動作確認削除)）。
 
 ## API 仕様とコード生成
 
@@ -129,7 +130,7 @@ pnpm --filter api-spec run postman:generate # Postman コレクションを再�
 ## テスト
 
 ```bash
-pnpm --filter backend test     # vitest（41 件）
+pnpm --filter backend test     # vitest（48 件）
 pnpm --filter cdk test         # jest（8 件、CloudFormation アサーション）
 pnpm --filter frontend lint
 pnpm --filter frontend build   # tsc -b && vite build（型チェック含む）
@@ -155,7 +156,7 @@ pnpm stack:deploy -- --stage dev
 
 `stack:deploy` は「型生成 → sera-mcp バンドル → Data/Backend デプロイ → Backend の URL を使って frontend をビルド → Frontend デプロイ」を順に行い、最後に URL を表示します（`pnpm deploy` は pnpm 組み込みコマンドと衝突するため `stack:*` という名前です）。
 
-デプロイ後、Sera の資格情報を設定します（値は端末に直接入力し、チャットやコードに貼らないでください）:
+**（任意）** 送金の組み立てなど Sera の認証付き API を使う機能を試す場合のみ、デプロイ後に Sera の資格情報を設定します（swap の見積・市場情報・残高には不要。値は端末に直接入力し、チャットやコードに貼らないでください）:
 
 ```bash
 aws secretsmanager put-secret-value --secret-id <SeraSecretArn> \
@@ -174,21 +175,23 @@ pnpm stack:destroy -- --stage dev
 
 | 項目 | 状態 | 根拠 |
 | --- | --- | --- |
-| backend ユニットテスト 41 件 | ✅ 通過 | 実行確認 |
+| backend ユニットテスト 48 件 | ✅ 通過 | 実行確認 |
 | CDK アサーション 8 件 / synth | ✅ 通過 | 実行確認 |
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
-| sera-mcp バンドルの実起動 | ❌ 未検証 | |
-| AWS へのデプロイ | ❌ 未実施 | |
+| sera-mcp バンドルの実起動（Lambda 上で `ready`、55 ツール、sepolia） | ✅ | CloudWatch Logs |
+| AWS へのデプロイ（dev） | ✅ | ユーザー実施。CORS/認証/起動エラーを修正済み |
 | Bedrock 呼び出し・ストリーミング | ❌ 未検証 | |
-| Privy ログイン/署名（`useSignTypedData` 等） | ❌ 未検証 | |
+| Privy ログイン・ウォレット作成/登録 | ✅ | ユーザー確認（アドレス取得） |
+| Privy 署名（`useSignTypedData` 等） | ❌ 未検証 | |
 | Sera 応答の形（`get_coin_metadata`、`fee_breakdown`、決済状態の語彙など） | ❌ 実機未確認（ソースからの推定） | |
 | ブラウザ E2E、Newman 実行 | ❌ 未実施 | |
 | SC-001 / SC-002 の計測 | ❌ 未計測 | |
 
 ## 制約・未対応事項
 
-- Sera 資格情報のローダーは実装済みだが、実際の Secrets Manager / sera-mcp との結合は未検証。
+- Sera の API キー/シークレットは、swap の見積・実行や市場情報には不要ですが、`/balances`・`/transfer`・決済状態など**認証付きエンドポイントには必要**です（sera-mcp のソース `src/sera/client.ts` の `auth: true`、および認証なしで `/balances` が 401 を返すことを確認）。残高はこのため**オンチェーンから直接読み**ます（ウォレット保有分のみ。Sera の Vault 内残高は含みません）。送金（`build_transfer`/`send_transfer`）と決済状態の照会は資格情報が無いと動かない見込みで、未対応です。
+- 資格情報のローダー（Secrets Manager → sera-mcp）は実装済み。未設定でも sera-mcp は起動します。
 - EIP-2612 permit が必要な見積は未対応（`PERMIT_NOT_SUPPORTED` で拒否）。
 - 実行環境はサーバー側の運用者資格情報に依存する Sera ツールが多い。
 - Sepolia のみ。メインネットでの利用は想定していません。

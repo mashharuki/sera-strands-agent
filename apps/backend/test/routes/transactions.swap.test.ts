@@ -16,20 +16,21 @@ vi.mock("@privy-io/node", () => ({
 const executeSwapCalls: unknown[] = [];
 vi.mock("../../src/agent/sera-mcp-client.js", () => ({
   callSeraTool: vi.fn(async (toolName: string, args: unknown) => {
-    if (toolName === "sera.get_balances") {
-      return {
-        balances: [
-          { token: "USDC", amount: "100" },
-          { token: "ETH", amount: "1" },
-        ],
-      };
-    }
     if (toolName === "sera.execute_swap") {
       executeSwapCalls.push(args);
       return { tx_hash: "0xtxhash" };
     }
     throw new Error(`unexpected tool ${toolName}`);
   }),
+}));
+
+vi.mock("../../src/agent/onchain-balances.js", () => ({
+  readOnchainBalances: vi.fn(async () => ({
+    balances: [
+      { token: "USDC", amount: "100", decimals: 6 },
+      { token: "ETH", amount: "1", decimals: 18 },
+    ],
+  })),
 }));
 
 const { app } = await import("../../src/index.js");
@@ -144,9 +145,12 @@ describe("POST /transactions/swap/confirm", () => {
 
   it("should not execute and should return faucet guidance when gas (ETH) balance is zero (FR-016, FR-020)", async () => {
     mockLookups({});
-    const { callSeraTool } = await import("../../src/agent/sera-mcp-client.js");
-    vi.mocked(callSeraTool).mockImplementationOnce(async () => ({
-      balances: [{ token: "USDC", amount: "100" }],
+    const { readOnchainBalances } = await import(
+      "../../src/agent/onchain-balances.js"
+    );
+    vi.mocked(readOnchainBalances).mockImplementationOnce(async () => ({
+      owner_address: "0xowner",
+      balances: [{ token: "USDC", amount: "100", decimals: 6 }],
     }));
 
     const res = await confirm();
