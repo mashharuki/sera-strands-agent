@@ -1,3 +1,4 @@
+import { toAgentHistory } from "../agent/history.js";
 import { createAgent } from "../agent/strands-client.js";
 import { createBalanceTool } from "../agent/tools/balance.js";
 import { createHistoryTool } from "../agent/tools/history.js";
@@ -7,7 +8,7 @@ import { createSwapIntentTool } from "../agent/tools/swap.js";
 import { createTransactionStatusTool } from "../agent/tools/transaction-status.js";
 import { createTransferIntentTool } from "../agent/tools/transfer.js";
 import { createWalletStatusTool } from "../agent/tools/wallet.js";
-import { appendMessage } from "../store/conversations.js";
+import { appendMessage, listMessages } from "../store/conversations.js";
 
 export type ChatStreamEvent =
   | { eventType: "token"; payload: { text: string } }
@@ -30,6 +31,10 @@ export interface ChatTurnInput {
 export async function* streamChatTurn(
   input: ChatTurnInput,
 ): AsyncGenerator<ChatStreamEvent> {
+  // 今回の発話を保存する前に、これまでの会話を読み込む（FR-018: 自分のセッションのみ）。
+  const history = toAgentHistory(
+    await listMessages(input.sessionId, input.userId),
+  );
   await appendMessage({
     sessionId: input.sessionId,
     userId: input.userId,
@@ -38,20 +43,23 @@ export async function* streamChatTurn(
   });
 
   const pendingApprovals: string[] = [];
-  const agent = createAgent([
-    createWalletStatusTool(input.userId),
-    createBalanceTool(input.userId),
-    createQuoteTool(input.userId),
-    createOrderbookTool(),
-    createHistoryTool(input.userId),
-    createSwapIntentTool(input.userId, (approvalId) =>
-      pendingApprovals.push(approvalId),
-    ),
-    createTransferIntentTool(input.userId, (approvalId) =>
-      pendingApprovals.push(approvalId),
-    ),
-    createTransactionStatusTool(input.userId),
-  ]);
+  const agent = createAgent(
+    [
+      createWalletStatusTool(input.userId),
+      createBalanceTool(input.userId),
+      createQuoteTool(input.userId),
+      createOrderbookTool(),
+      createHistoryTool(input.userId),
+      createSwapIntentTool(input.userId, (approvalId) =>
+        pendingApprovals.push(approvalId),
+      ),
+      createTransferIntentTool(input.userId, (approvalId) =>
+        pendingApprovals.push(approvalId),
+      ),
+      createTransactionStatusTool(input.userId),
+    ],
+    history,
+  );
   let assistantText = "";
 
   try {

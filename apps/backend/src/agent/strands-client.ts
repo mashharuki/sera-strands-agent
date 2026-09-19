@@ -1,4 +1,4 @@
-import type { InvokableTool } from "@strands-agents/sdk";
+import type { InvokableTool, MessageData } from "@strands-agents/sdk";
 import { Agent, type AgentConfig } from "@strands-agents/sdk";
 import { BedrockModel } from "@strands-agents/sdk/models/bedrock";
 
@@ -31,8 +31,12 @@ const SYSTEM_PROMPT = `あなたはSera Protocol AIチャットボットのア�
   表示するだけで資産は動かないので、ユーザーに「同意」等のチャット返信を求めてから呼ぶ必要はない。
   呼んだ後は「確認画面の内容を確認し、承認して署名してください」と案内する。
 - 「同意」「はい」などのチャットの返信だけでは、swapや送金は実行されない。
-  ユーザーがそう返信したら、確認画面の承認ボタンを押してウォレットで署名するよう案内する
-  （確認画面が無い場合は、request_swap/request_transferを呼び直す）。
+  確認画面をすでに表示した後にそう返信されたら、確認画面の承認ボタンを押して
+  ウォレットで署名するよう案内する。確認画面をまだ表示していない場合（見積もりを
+  提示しただけの段階）は、下記のとおりrequest_swap/request_transferを呼んで確認画面を表示する。
+- 見積もりの結果を伝えるときは、後で使うので見積もりID（quoteId）を必ず本文に含める。
+  ユーザーが見積もりに同意（「OK」「はい」「進めて」等）したら、会話履歴の見積もりIDを使って、
+  すぐにrequest_swapを呼ぶ（もう一度見積もりを取り直さない）。
 - 手数料・レート・有効期限は、ツールが返した値をそのまま伝える（「含まれています」などと
   推測で言い換えない）。
 - 依頼に必要な情報が不足している場合は、実行に進む前に必ず質問して補完する。
@@ -42,10 +46,12 @@ const SYSTEM_PROMPT = `あなたはSera Protocol AIチャットボットのア�
 
 export function createAgent(
   tools: InvokableTool<unknown, unknown>[] = [],
+  history: MessageData[] = [],
 ): Agent {
   const config: AgentConfig = {
     model: createModel(),
     tools,
+    messages: history,
     systemPrompt: SYSTEM_PROMPT,
   };
   return new Agent(config);

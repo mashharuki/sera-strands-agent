@@ -130,7 +130,7 @@ pnpm --filter api-spec run postman:generate # Postman コレクションを再�
 ## テスト
 
 ```bash
-pnpm --filter backend test     # vitest（68 件）
+pnpm --filter backend test     # vitest（74 件）
 pnpm --filter cdk test         # jest（8 件、CloudFormation アサーション）
 pnpm --filter frontend lint
 pnpm --filter frontend build   # tsc -b && vite build（型チェック含む）
@@ -175,7 +175,7 @@ pnpm stack:destroy -- --stage dev
 
 | 項目 | 状態 | 根拠 |
 | --- | --- | --- |
-| backend ユニットテスト 68 件 | ✅ 通過 | 実行確認 |
+| backend ユニットテスト 74 件 | ✅ 通過 | 実行確認 |
 | CDK アサーション 8 件 / synth | ✅ 通過 | 実行確認 |
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
