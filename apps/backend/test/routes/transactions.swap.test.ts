@@ -151,6 +151,8 @@ describe("POST /transactions/swap/confirm", () => {
     vi.mocked(readOnchainBalances).mockImplementationOnce(async () => ({
       owner_address: "0xowner",
       balances: [{ token: "USDC", amount: "100", decimals: 6 }],
+      checked_tokens: 1,
+      unreadable_tokens: [],
     }));
 
     const res = await confirm();

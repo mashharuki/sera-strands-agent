@@ -47,5 +47,9 @@ export async function checkSufficientBalance(
   return { ok: true };
 }
 
+/** Seraのテストトークンが不足しているときの案内（ユーザー確認済みの入手先）。 */
+export const tokenShortageMessage = (symbol: string): string =>
+  `${symbol}の残高が不足しています。Sera のテストネットアプリ（https://app.testnet.sera.cx/）でテストトークンを入手できます。`;
+
 export const FAUCET_GUIDANCE =
   "Sepolia ETH（ネットワーク手数料）が不足しています。Sepoliaの公開faucet（例: https://sepoliafaucet.com ）から入手してください。";

@@ -3,7 +3,11 @@ import { isAddress, parseUnits } from "viem";
 import { z } from "zod";
 import { createApprovalRequest } from "../../store/approvals.js";
 import { getWallet } from "../../store/wallets.js";
-import { checkSufficientBalance, FAUCET_GUIDANCE } from "../balance-check.js";
+import {
+  checkSufficientBalance,
+  FAUCET_GUIDANCE,
+  tokenShortageMessage,
+} from "../balance-check.js";
 import { callSeraToolSafely, toUserFacingMessage } from "../errors.js";
 import { buildUnsignedTransfer } from "../onchain-transfer.js";
 import { resolveToken } from "../sera-tools.js";
@@ -73,7 +77,7 @@ export function createTransferIntentTool(
             error:
               balanceCheck.reason === "insufficient_gas"
                 ? FAUCET_GUIDANCE
-                : `${resolved.symbol}の残高が不足しています`,
+                : tokenShortageMessage(resolved.symbol),
           };
         }
 

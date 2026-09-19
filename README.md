@@ -80,7 +80,7 @@ docs/         設計メモ、アーキテクチャ図、ブログ原稿
 - [Privy](https://privy.io) のアプリ（App ID と検証キー）
 - Sepolia の RPC URL
 - （任意）Sera の API キー/シークレット。**swap の見積・実行と市場情報は不要**、残高もオンチェーンから読むため不要です。送金の組み立て・決済状態の照会など、Sera の認証付き API を使う機能でのみ必要です（[制約](#制約未対応事項)）
-- Sepolia のテストトークン（残高が不足している場合、アプリは faucet の案内を表示します）
+- Sepolia ETH（ガス代。公開 faucet などで入手）と、Sera のテストトークン。テストトークンは **Sera のテストネットアプリ（https://app.testnet.sera.cx/ ）から取得**できます（開発者が実際に MYRT 10,000 を入手して確認）。残高が不足している場合、アプリはこれらの案内を表示します
 
 ## セットアップ
 
@@ -108,7 +108,7 @@ cp .env.example .env       # Privy の App ID / 検証キー、Sepolia の RPC U
 | `VITE_CHAT_URL` | frontend（ビルド時） | Function URL（同上） |
 | `PRIVY_APP_ID`, `PRIVY_VERIFICATION_KEY` | backend（デプロイ時に環境から引き継ぎ） | JWT 検証 |
 | `SEPOLIA_RPC_URL` | backend | **残高の取得、送金トランザクションの組み立て・送信、レシート確認**（すべてオンチェーン。必須） |
-| `BALANCE_SYMBOLS` | backend（任意） | 残高を表示する Sera トークンのシンボル（カンマ区切り、既定 `USDC,XSGD,MYRT`） |
+| `BALANCE_SYMBOLS` | backend（任意） | 残高を確認する Sera トークンを絞る（カンマ区切り）。未設定なら Sera に登録された全トークン（テストネットで約150種類）を1回のマルチコールで確認し、残高0は省略 |
 | `BEDROCK_MODEL_ID`, `BEDROCK_REGION` | backend | Bedrock のモデル/リージョン。既定は Amazon Nova 2 Lite（`jp.amazon.nova-2-lite-v1:0`, `ap-northeast-1`）。他モデルに変える場合は CDK の IAM 許可も要変更 |
 | `POLICY_DRY_RUN` | backend | sera-mcp のドライラン |
 | `TABLE_NAME`, `SERA_NETWORK`, `SERA_MCP_BIN`, `SERA_SECRET_ID` | backend | CDK が自動設定 |
@@ -130,7 +130,7 @@ pnpm --filter api-spec run postman:generate # Postman コレクションを再�
 ## テスト
 
 ```bash
-pnpm --filter backend test     # vitest（52 件）
+pnpm --filter backend test     # vitest（59 件）
 pnpm --filter cdk test         # jest（8 件、CloudFormation アサーション）
 pnpm --filter frontend lint
 pnpm --filter frontend build   # tsc -b && vite build（型チェック含む）
@@ -175,15 +175,17 @@ pnpm stack:destroy -- --stage dev
 
 | 項目 | 状態 | 根拠 |
 | --- | --- | --- |
-| backend ユニットテスト 52 件 | ✅ 通過 | 実行確認 |
+| backend ユニットテスト 59 件 | ✅ 通過 | 実行確認 |
 | CDK アサーション 8 件 / synth | ✅ 通過 | 実行確認 |
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
 | sera-mcp バンドルの実起動（Lambda 上で `ready`、55 ツール、sepolia） | ✅ | CloudWatch Logs |
-| sera-mcp への接続（ステートフル）とツール呼び出し | ⚠️ ローカルで確認（`get_coin_metadata` 成功）。Lambda 上は再デプロイ後に要確認 | `--stateless` は不可（research.md §4.2-A） |
+| sera-mcp への接続（ステートフル）とツール呼び出し | ✅ Lambda 上で確認（残高表示にトークン解決 `get_coin_metadata` を使用）。他ツールは未確認 | `--stateless` は不可（research.md §4.2-A） |
 | AWS へのデプロイ（dev） | ✅ | ユーザー実施。CORS/認証/起動エラーを修正済み |
 | Bedrock 呼び出し・ストリーミング | ❌ 未検証 | |
 | Privy ログイン・ウォレット作成/登録 | ✅ | ユーザー確認（アドレス取得） |
+| チャット（Bedrock Nova 2 Lite + ツール呼び出し + ストリーミング）で残高を回答 | ✅ | ユーザー確認（日本語で ETH/各トークン残高を回答） |
+| 残高取得（オンチェーン、Sera のトークン解決込み）と画面表示 | ✅ | ユーザー確認（デプロイ済み dev） |
 | Privy 署名（`useSignTypedData` 等） | ❌ 未検証 | |
 | Sera 応答の形（`get_coin_metadata`、`fee_breakdown`、決済状態の語彙など） | ❌ 実機未確認（ソースからの推定） | |
 | ブラウザ E2E、Newman 実行 | ❌ 未実施 | |
@@ -192,7 +194,7 @@ pnpm stack:destroy -- --stage dev
 ## 制約・未対応事項
 
 - Sera の API キー/シークレットは、swap の見積・実行や市場情報には不要ですが、`/balances`・`/transfer`・決済状態など**認証付きエンドポイントには必要**です（sera-mcp のソース `src/sera/client.ts` の `auth: true`、および認証なしで `/balances` が 401 を返すことを確認）。キーはウォレット単位で発行されるため、ユーザーごとに必要になる恐れがあり、このアプリはキー不要の経路を使います。
-  - **残高**: オンチェーンから直接読む（ウォレット保有分のみ。Sera の Vault 内残高は含まない）。
+  - **残高**: オンチェーンから直接読む。対象は Sera のレジストリ（公開の `GET /tokens`）に登録された全トークンで、残高0は省略（ウォレット保有分のみ。Sera の Vault 内残高は含まない）。
   - **送金**: ERC-20 の `transfer` を viem で組み立て、ユーザーが署名した raw tx を RPC へ直接送る（承認内容との一致は送信前に検証）。状態はオンチェーンのレシートで確認。
   - **swap の決済状態**: 公開の照会手段が無く、`sera.settlement_status` は認証必須です。キー未設定の間、swap の状態は `broadcast_pending` のままで、`statusCheckError` が付きます（成功と推測しません）。`swap` の実行結果は Sera の応答（`trade_id`）と、残高で確認してください。
 - 資格情報のローダー（Secrets Manager → sera-mcp）は実装済み。未設定でも sera-mcp は起動します。

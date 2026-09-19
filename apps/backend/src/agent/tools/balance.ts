@@ -25,11 +25,21 @@ export function createBalanceTool(userId: string) {
         };
       }
       try {
-        const { balances } = await callSeraToolSafely(
-          "onchain.get_balances",
-          () => getBalances(wallet.address),
-        );
-        return { hasWallet: true, address: wallet.address, balances };
+        const { balances, checked_tokens, unreadable_tokens } =
+          await callSeraToolSafely("onchain.get_balances", () =>
+            getBalances(wallet.address),
+          );
+        return {
+          hasWallet: true,
+          address: wallet.address,
+          balances,
+          note: `Seraに登録された${checked_tokens}種類のトークンとETHを確認済み。balancesに無いトークンは残高0（USDT等も対象）。ウォレット保有分のみで、SeraのVault内残高は含まない。`,
+          ...(unreadable_tokens.length > 0 && {
+            unreadable_tokens,
+            unreadable_note:
+              "これらのトークンは残高を読み取れなかった（0とは限らない）。",
+          }),
+        };
       } catch (err) {
         return {
           hasWallet: true,

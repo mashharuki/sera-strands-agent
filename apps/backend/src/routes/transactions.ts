@@ -4,6 +4,7 @@ import { isAddress, parseUnits } from "viem";
 import {
   checkSufficientBalance,
   FAUCET_GUIDANCE,
+  tokenShortageMessage,
 } from "../agent/balance-check.js";
 import { refreshTransaction } from "../agent/chain-status.js";
 import {
@@ -203,7 +204,7 @@ transactionRoutes.post("/transactions/transfer/prepare", async (c) => {
           message:
             balanceCheck.reason === "insufficient_gas"
               ? FAUCET_GUIDANCE
-              : `${resolved.symbol}の残高が不足しています`,
+              : tokenShortageMessage(resolved.symbol),
         },
         400,
       );
@@ -337,7 +338,7 @@ async function confirmApproval(
     const message =
       balanceCheck.reason === "insufficient_gas"
         ? FAUCET_GUIDANCE
-        : `${snapshot.token}の残高が不足しています`;
+        : tokenShortageMessage(snapshot.token);
     return c.json({ code: "INSUFFICIENT_BALANCE", message }, 400);
   }
 

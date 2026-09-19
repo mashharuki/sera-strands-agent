@@ -14,18 +14,26 @@ export type OnchainBalance = {
   decimals: number;
 };
 
+export type BalancesResult = {
+  owner_address: string;
+  /** ETH（0でも常に含む）と、残高が0より大きいSeraトークン。 */
+  balances: OnchainBalance[];
+  /** 調べたSeraトークンの数（残高0のものは`balances`から省いている）。 */
+  checked_tokens: number;
+  /** 残高を読み取れなかったトークンのシンボル（0とは限らない）。 */
+  unreadable_tokens: string[];
+};
+
 export type TokenInfo = { symbol: string; address: string; decimals: number };
 
 export type BalanceReader = {
   getEthBalance: (owner: `0x${string}`) => Promise<bigint>;
-  getTokenBalance: (
-    token: `0x${string}`,
+  /** 入力と同じ順序で返す。読み取れなかったトークンは undefined。 */
+  getTokenBalances: (
     owner: `0x${string}`,
-  ) => Promise<bigint>;
+    tokens: TokenInfo[],
+  ) => Promise<(bigint | undefined)[]>;
 };
-
-/** 残高を表示するSeraのトークン。`BALANCE_SYMBOLS`（カンマ区切り）で上書きできる。 */
-const DEFAULT_SYMBOLS = ["USDC", "XSGD", "MYRT"];
 
 function defaultReader(): BalanceReader {
   const rpcUrl = process.env.SEPOLIA_RPC_URL;
@@ -36,56 +44,75 @@ function defaultReader(): BalanceReader {
   });
   return {
     getEthBalance: (owner) => client.getBalance({ address: owner }),
-    getTokenBalance: (token, owner) =>
-      client.readContract({
-        address: token,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [owner],
-      }),
+    // 全トークンをMulticall3で1回のRPCにまとめる。1件の失敗で全体を落とさない。
+    getTokenBalances: async (owner, tokens) => {
+      const results = await client.multicall({
+        allowFailure: true,
+        contracts: tokens.map((t) => ({
+          address: t.address as `0x${string}`,
+          abi: erc20Abi,
+          functionName: "balanceOf" as const,
+          args: [owner] as const,
+        })),
+      });
+      return results.map((r) =>
+        r.status === "success" ? (r.result as bigint) : undefined,
+      );
+    },
   };
 }
 
 /**
- * ウォレット残高をチェーンから直接読む（ETH + Seraのトークン）。
+ * ウォレット残高をチェーンから直接読む（ETH + Seraに登録された全トークン）。
  *
  * sera-mcpの`sera.get_balances`はSeraの認証付きAPI（`/balances`、API Key必須。認証なしだと401を
  * 実確認）を使うため、資格情報なしでも動くようオンチェーンで読む。ウォレット保有分のみで、
- * SeraのVault内残高は含まない。トークンのアドレス/decimalsはSeraのレジストリ
- * （`sera.get_coin_metadata`）から解決し、未対応のシンボルは表示しない。
- * 読み取りに失敗したトークンを0として扱わないよう、失敗は例外にする。
+ * SeraのVault内残高は含まない。対象トークンはSeraのレジストリ（`GET /tokens`）から取得する。
+ * 残高0のトークンは結果から省き（150種類ほどあるため）、読み取れなかったものは0扱いにせず
+ * `unreadable_tokens`で明示する。`BALANCE_SYMBOLS`（カンマ区切り）で対象を絞れる。
  */
 export async function readOnchainBalances(
   owner: string,
-  resolveToken: (symbol: string) => Promise<TokenInfo | undefined>,
+  getTokens: () => Promise<TokenInfo[]>,
   reader: BalanceReader = defaultReader(),
-): Promise<{ owner_address: string; balances: OnchainBalance[] }> {
+): Promise<BalancesResult> {
   if (!isAddress(owner)) throw new Error(`invalid owner address: ${owner}`);
-  const symbols = (process.env.BALANCE_SYMBOLS ?? DEFAULT_SYMBOLS.join(","))
+  const wanted = (process.env.BALANCE_SYMBOLS ?? "")
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => s.trim().toUpperCase())
     .filter(Boolean);
 
-  const tokens = (
-    await Promise.all(symbols.map((s) => resolveToken(s)))
-  ).filter((t): t is TokenInfo => t !== undefined);
+  const all = await getTokens();
+  const tokens =
+    wanted.length > 0
+      ? all.filter((t) => wanted.includes(t.symbol.toUpperCase()))
+      : all;
 
-  const [eth, ...rest] = await Promise.all([
+  const [eth, raw] = await Promise.all([
     reader.getEthBalance(owner),
-    ...tokens.map((t) =>
-      reader.getTokenBalance(t.address as `0x${string}`, owner),
-    ),
+    reader.getTokenBalances(owner, tokens),
   ]);
+
+  const balances: OnchainBalance[] = [
+    { token: "ETH", amount: formatUnits(eth, 18), decimals: 18 },
+  ];
+  const unreadable: string[] = [];
+  tokens.forEach((t, i) => {
+    const value = raw[i];
+    if (value === undefined) unreadable.push(t.symbol);
+    else if (value > 0n) {
+      balances.push({
+        token: t.symbol,
+        amount: formatUnits(value, t.decimals),
+        decimals: t.decimals,
+      });
+    }
+  });
 
   return {
     owner_address: owner,
-    balances: [
-      { token: "ETH", amount: formatUnits(eth, 18), decimals: 18 },
-      ...tokens.map((t, i) => ({
-        token: t.symbol,
-        amount: formatUnits(rest[i], t.decimals),
-        decimals: t.decimals,
-      })),
-    ],
+    balances,
+    checked_tokens: tokens.length,
+    unreadable_tokens: unreadable,
   };
 }
