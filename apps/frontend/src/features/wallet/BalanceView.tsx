@@ -30,10 +30,10 @@ export function BalanceView() {
     );
   }
 
-  const balances =
-    (balanceQuery.data?.balances as
-      | { token?: string; amount?: string }[]
-      | undefined) ?? [];
+  const rawBalances: unknown = balanceQuery.data?.balances;
+  const balances = Array.isArray(rawBalances)
+    ? (rawBalances as { token?: string; amount?: string }[])
+    : [];
 
   return (
     <div className="balance-view">

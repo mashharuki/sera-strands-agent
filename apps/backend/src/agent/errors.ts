@@ -24,6 +24,8 @@ export async function callSeraToolSafely<T>(
     console.error("[sera-tool] call failed", {
       toolName,
       cause: err instanceof Error ? err.message : String(err),
+      // MCP SDKのStreamableHTTPErrorはHTTPステータスを`code`に持つ。
+      code: (err as { code?: unknown } | undefined)?.code,
     });
     throw new SeraToolError(
       `sera-mcpツール "${toolName}" の呼び出しに失敗しました`,

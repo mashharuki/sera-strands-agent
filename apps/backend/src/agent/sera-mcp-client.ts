@@ -10,8 +10,12 @@ import { loadSeraCredentials, type SeraCredentials } from "./sera-auth";
  * デプロイ側（apps/cdk のバンドリング or デプロイスクリプト）が
  * `SERA_MCP_BIN` の指すファイルを用意する責任を持つ（未実装、T075参照）。
  *
- * research.md §4.2 の決定: `--transport http --stateless --host 127.0.0.1`
- * でループバック起動し、同一Lambda実行環境内から呼び出す。
+ * research.md §4.2 の決定: `--transport http --host 127.0.0.1` でループバック起動し、
+ * 同一Lambda実行環境内から呼び出す。
+ * `--stateless` は使わない（実測で判明）: sera-mcp v1 のstatelessモードは単一の
+ * トランスポートを使い回す実装で、同梱のMCP SDK 1.30.0が2回目のリクエストを
+ * "Stateless transport cannot be reused across requests" で拒否するため、接続に失敗する。
+ * ステートフルモードで1セッションを保ち、子プロセスごとに1回だけ接続する。
  * research.md §1.2 の決定: 署名モードは `external`（サーバーは署名しない、
  * 非カストディアル）。
  */
@@ -31,16 +35,7 @@ function spawnSeraMcp(credentials?: SeraCredentials): ChildProcess {
   }
   const proc = spawn(
     process.execPath,
-    [
-      bin,
-      "--transport",
-      "http",
-      "--stateless",
-      "--host",
-      "127.0.0.1",
-      "--port",
-      String(PORT),
-    ],
+    [bin, "--transport", "http", "--host", "127.0.0.1", "--port", String(PORT)],
     {
       env: {
         ...process.env,
@@ -51,7 +46,6 @@ function spawnSeraMcp(credentials?: SeraCredentials): ChildProcess {
         }),
         SERA_NETWORK: process.env.SERA_NETWORK ?? "sepolia",
         SERA_SIGNER_MODE: "external",
-        SERA_HTTP_STATELESS: "true",
         POLICY_DRY_RUN: process.env.POLICY_DRY_RUN ?? "false",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -59,6 +53,11 @@ function spawnSeraMcp(credentials?: SeraCredentials): ChildProcess {
   );
   proc.stderr?.on("data", (chunk: Buffer) => {
     console.error("[sera-mcp]", chunk.toString());
+  });
+  // 子プロセスが落ちたら、次の呼び出しで再起動・再接続できるよう状態を捨てる。
+  proc.on("exit", (code, signal) => {
+    console.error("[sera-mcp] exited", { code, signal });
+    if (child === proc) resetConnection();
   });
   return proc;
 }
@@ -77,6 +76,12 @@ async function waitForHealth(baseUrl: string, timeoutMs = 5000): Promise<void> {
   throw new Error("sera-mcp did not become healthy within timeout");
 }
 
+function resetConnection(): void {
+  child = undefined;
+  client = undefined;
+  readyPromise = undefined;
+}
+
 /**
  * 同一Lambda実行環境の再利用（ウォームスタート）をまたいで、子プロセスと
  * MCPクライアント接続を使い回す。初回呼び出し時のみ起動する。
@@ -86,20 +91,28 @@ export async function getSeraMcpClient(): Promise<Client> {
   if (readyPromise) return readyPromise;
 
   readyPromise = (async () => {
-    child = spawnSeraMcp(await loadSeraCredentials());
-    const baseUrl = `http://127.0.0.1:${PORT}`;
-    await waitForHealth(baseUrl);
+    try {
+      child = spawnSeraMcp(await loadSeraCredentials());
+      const baseUrl = `http://127.0.0.1:${PORT}`;
+      await waitForHealth(baseUrl);
 
-    const mcpClient = new Client({
-      name: "sera-strands-agent-backend",
-      version: "0.1.0",
-    });
-    const transport = new StreamableHTTPClientTransport(
-      new URL(`${baseUrl}/mcp`),
-    );
-    await mcpClient.connect(transport);
-    client = mcpClient;
-    return mcpClient;
+      const mcpClient = new Client({
+        name: "sera-strands-agent-backend",
+        version: "0.1.0",
+      });
+      const transport = new StreamableHTTPClientTransport(
+        new URL(`${baseUrl}/mcp`),
+      );
+      await mcpClient.connect(transport);
+      client = mcpClient;
+      return mcpClient;
+    } catch (error) {
+      // 失敗した接続をキャッシュしない（以前は拒否されたPromiseが残り、以降の呼び出しが
+      // すべて即座に失敗していた）。子プロセスも片付けて、次回は最初からやり直す。
+      child?.kill();
+      resetConnection();
+      throw error;
+    }
   })();
 
   return readyPromise;

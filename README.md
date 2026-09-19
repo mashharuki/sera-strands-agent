@@ -180,6 +180,7 @@ pnpm stack:destroy -- --stage dev
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
 | sera-mcp バンドルの実起動（Lambda 上で `ready`、55 ツール、sepolia） | ✅ | CloudWatch Logs |
+| sera-mcp への接続（ステートフル）とツール呼び出し | ⚠️ ローカルで確認（`get_coin_metadata` 成功）。Lambda 上は再デプロイ後に要確認 | `--stateless` は不可（research.md §4.2-A） |
 | AWS へのデプロイ（dev） | ✅ | ユーザー実施。CORS/認証/起動エラーを修正済み |
 | Bedrock 呼び出し・ストリーミング | ❌ 未検証 | |
 | Privy ログイン・ウォレット作成/登録 | ✅ | ユーザー確認（アドレス取得） |

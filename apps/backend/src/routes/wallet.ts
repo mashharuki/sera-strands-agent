@@ -60,9 +60,10 @@ walletRoutes.get("/wallet/balance", async (c) => {
     );
   }
   try {
-    const balances = await callSeraToolSafely("onchain.get_balances", () =>
+    const { balances } = await callSeraToolSafely("onchain.get_balances", () =>
       getBalances(wallet.address),
     );
+    // OpenAPI契約: balances は {token, amount}[] の配列。
     return c.json({ walletAddress: wallet.address, balances }, 200);
   } catch (err) {
     if (err instanceof SeraToolError) {

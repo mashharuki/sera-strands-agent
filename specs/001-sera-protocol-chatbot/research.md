@@ -302,3 +302,13 @@
 - 環境変数 `BEDROCK_MODEL_ID` で差し替え可能。Claude 等へ戻す場合は CDK の IAM 許可（`backend-stack.ts`、現在は `amazon.nova-*` のみ）を広げる。
 - 副次的な発見: 変更前の CDK には Bedrock 呼び出しの IAM 権限が無かった。`bedrock:InvokeModel` / `InvokeModelWithResponseStream` を追加し、テストで確認。
 - **未確認**: Strands TS SDK + Nova でのツール呼び出し・ストリーミング、日本語応答品質（スパイクS4は Nova で実施し直す必要がある）、実際の単価とクレジット適用可否。
+
+## 4.2-A. sera-mcp の HTTP モードは `--stateless` を使わない（実測、2026-09-19）
+
+**Decision**: sera-mcp(v1) は `--transport http --host 127.0.0.1`（ステートフル）で起動し、子プロセスごとに1セッションで接続する。§4.2 の `--stateless` 前提を置き換える。
+
+**根拠（実測・実コード確認）**:
+- Lambda 上で `--stateless` の接続が毎回 `Streamable HTTP error: Error POSTing to endpoint:` で失敗した（CloudWatch Logs）。ローカルの同じバンドルでも再現（stateless=FAIL、stateful=OK。`sera.get_coin_metadata` で USDC の Sepolia アドレス/decimals を取得できた）。
+- 原因: `vendor/sera-mcp/src/transports/http.ts` は stateless 時に**単一の** `StreamableHTTPServerTransport` を使い回すが、同梱の MCP SDK 1.30.0 は stateless トランスポートの再利用を `Stateless transport cannot be reused across requests` で拒否する（`webStandardStreamableHttp.js`）。
+- 併せて、クライアント側が失敗した接続の Promise をキャッシュしていたため、以降の呼び出しがすべて即失敗していた（修正済み: 失敗時は状態を捨てて再試行、子プロセス終了時も再接続）。
+- スパイクS3（T007）の合格条件「statelessで単発HTTP呼び出し」は**不合格**。

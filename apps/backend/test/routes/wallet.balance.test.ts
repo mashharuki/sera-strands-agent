@@ -63,5 +63,8 @@ describe("GET /wallet/balance", () => {
 
     expect(res.status).toBe(200);
     expect(balanceCallLog).toEqual(["0xUserAAddress"]);
+    // OpenAPI契約どおり、balancesは配列で返す（画面が map するため）
+    const body = (await res.json()) as { balances: unknown };
+    expect(Array.isArray(body.balances)).toBe(true);
   });
 });
