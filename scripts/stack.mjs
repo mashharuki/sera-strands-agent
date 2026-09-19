@@ -13,6 +13,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cdkBin = resolve(root, "apps/cdk/node_modules/.bin/cdk");
 const outputsFile = resolve(root, "apps/cdk/cdk.out/outputs.json");
 
+// ルートの .env があれば読み込む（既に設定済みの環境変数は上書きしない）。
+if (existsSync(resolve(root, ".env"))) {
+  process.loadEnvFile(resolve(root, ".env"));
+}
+
 const [mode, ...rest] = process.argv.slice(2);
 const stageIdx = rest.indexOf("--stage");
 const stage = stageIdx >= 0 ? rest[stageIdx + 1] : undefined;

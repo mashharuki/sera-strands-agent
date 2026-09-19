@@ -91,6 +91,14 @@ pnpm install
 pnpm build:sera-mcp        # vendor/sera-mcp をバンドル → apps/backend/vendor-dist/sera-mcp.mjs
 ```
 
+デプロイ用の環境変数はルートの `.env` にまとめます（`.env` は `.gitignore` 済み）。
+
+```bash
+cp .env.example .env       # Privy の App ID / 検証キー、Sepolia の RPC URL などを記入
+```
+
+`pnpm stack:deploy` は起動時に `.env` を読み込みます（シェルで既に設定済みの変数は上書きしません）。Sera の API キー/シークレットと AWS の認証情報は `.env` に書きません。フロントエンドのローカル開発（`pnpm --filter frontend dev`）では `apps/frontend/.env.example` を `.env.local` にコピーして `VITE_*` を設定します。
+
 ## 環境変数
 
 | 変数 | 使う場所 | 説明 |
@@ -141,7 +149,7 @@ pnpm --filter api-spec run test:api
 > **注意**: 実際に AWS リソースを作成し、料金が発生します。ステージ名は必須です。
 
 ```bash
-export VITE_PRIVY_APP_ID=... PRIVY_APP_ID=... PRIVY_VERIFICATION_KEY=... SEPOLIA_RPC_URL=...
+# 事前に .env を用意しておく（セットアップ参照）。シェルの export でも可
 pnpm stack:deploy -- --stage dev
 ```
 
