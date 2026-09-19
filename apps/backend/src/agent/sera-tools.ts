@@ -64,23 +64,6 @@ export const settlementStatus = (args: {
 export const getCoinMetadata = (symbol: string) =>
   callSeraTool("sera.get_coin_metadata", { symbol });
 
-/** `token`はコントラクトアドレス、`amount`は最小単位(uint256)の10進文字列。 */
-export const buildTransfer = (args: {
-  token: string;
-  to: string;
-  amount: string;
-  fromAddress: string;
-}) =>
-  callSeraTool("sera.build_transfer", {
-    token: args.token,
-    to: args.to,
-    amount: args.amount,
-    from_address: args.fromAddress,
-  });
-
-export const sendTransfer = (rawTx: string) =>
-  callSeraTool("sera.send_transfer", { raw_tx: rawTx });
-
 const INTENT_TYPES = {
   Intent: [
     { name: "taker", type: "address" },

@@ -62,7 +62,7 @@ export function useSignAndConfirmSwap() {
 }
 
 /**
- * T063/T065: 送金用。`approval.signPayload`（`sera.build_transfer`が返した未署名tx）を
+ * T063/T065: 送金用。`approval.signPayload`（バックエンドがviemで組み立てた未署名のERC-20 transfer tx。`gasLimit`等はPrivyの形式）を
  * Privyのウォレットで署名し、得られた**署名済みraw tx**を`signature`として
  * `POST /transactions/transfer/confirm`へ渡す（サーバー側で宛先・数量・署名者を検証する、FR-010）。
  */
@@ -78,11 +78,6 @@ export function useSignAndConfirmTransfer() {
         const unsigned = {
           ...(approval.signPayload as Record<string, unknown>),
         };
-        // Privyは`gasLimit`、Sera側は`gas`の可能性があるため寄せる（実疎通で要確認）。
-        if (unsigned.gas !== undefined && unsigned.gasLimit === undefined) {
-          unsigned.gasLimit = unsigned.gas;
-          unsigned.gas = undefined;
-        }
         const { signature } = await signTransaction(
           unsigned as Parameters<typeof signTransaction>[0],
         );

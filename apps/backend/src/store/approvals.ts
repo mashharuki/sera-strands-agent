@@ -36,7 +36,7 @@ export interface ApprovalRequestRecord {
   updatedAt: string;
   /**
    * swap実行時にウォレットで署名すべきEIP-712ペイロード（`Quote.signPayload`から
-   * コピー）。送金（transfer）の場合は`buildTransfer`が返す未署名トランザクション
+   * コピー）。送金（transfer）の場合は`buildUnsignedTransfer`（onchain-transfer.ts）が返す未署名トランザクション
    * （T059/US5実装時に追加）。
    */
   signPayload?: unknown;

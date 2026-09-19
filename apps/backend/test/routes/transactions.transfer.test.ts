@@ -16,12 +16,15 @@ vi.mock("@privy-io/node", () => ({
 }));
 
 const sendTransferCalls: unknown[] = [];
+vi.mock("../../src/agent/onchain-transfer.js", () => ({
+  broadcastSignedTransfer: vi.fn(async (rawTx: string) => {
+    sendTransferCalls.push(rawTx);
+    return { tx_hash: "0xtxhash" };
+  }),
+  buildUnsignedTransfer: vi.fn(),
+}));
 vi.mock("../../src/agent/sera-mcp-client.js", () => ({
-  callSeraTool: vi.fn(async (toolName: string, args: unknown) => {
-    if (toolName === "sera.send_transfer") {
-      sendTransferCalls.push(args);
-      return { tx_hash: "0xtxhash" };
-    }
+  callSeraTool: vi.fn(async (toolName: string) => {
     throw new Error(`unexpected tool ${toolName}`);
   }),
   readSeraResource: vi.fn(),

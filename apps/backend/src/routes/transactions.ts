@@ -12,11 +12,10 @@ import {
   toUserFacingMessage,
 } from "../agent/errors.js";
 import {
-  buildTransfer,
-  executeSwap,
-  resolveToken,
-  sendTransfer,
-} from "../agent/sera-tools.js";
+  broadcastSignedTransfer,
+  buildUnsignedTransfer,
+} from "../agent/onchain-transfer.js";
+import { executeSwap, resolveToken } from "../agent/sera-tools.js";
 import { verifySignedTransfer } from "../agent/tx-verify.js";
 import type { AuthedVariables } from "../auth/privy.js";
 import {
@@ -136,7 +135,7 @@ transactionRoutes.post("/transactions/swap/prepare", async (c) => {
 
 /**
  * FR-006, FR-008: 送金の確認内容を作成する。
- * `sera.build_transfer`で未署名トランザクションを生成し、ユーザーのウォレット署名待ちにする。
+ * ERC-20の`transfer`をオンチェーン用に組み立てた未署名トランザクションを生成し、ユーザーのウォレット署名待ちにする。
  * 残高・ガス代不足はこの時点で検出し、faucet案内を返す（FR-016, FR-020）。
  */
 transactionRoutes.post("/transactions/transfer/prepare", async (c) => {
@@ -210,23 +209,14 @@ transactionRoutes.post("/transactions/transfer/prepare", async (c) => {
       );
     }
 
-    const built = (await callSeraToolSafely("sera.build_transfer", () =>
-      buildTransfer({
-        token: resolved.address,
+    const unsignedTx = await callSeraToolSafely("onchain.build_transfer", () =>
+      buildUnsignedTransfer({
+        tokenAddress: resolved.address,
         to: destinationAddress,
-        amount: rawAmount,
-        fromAddress: wallet.address,
+        rawAmount,
+        from: wallet.address,
       }),
-    )) as { tx?: unknown };
-    if (!built?.tx) {
-      return c.json(
-        {
-          code: "SERA_UNAVAILABLE",
-          message: "送金トランザクションの生成結果を解釈できませんでした",
-        },
-        502,
-      );
-    }
+    );
 
     const approval = await createApprovalRequest({
       approvalId: crypto.randomUUID(),
@@ -241,7 +231,7 @@ transactionRoutes.post("/transactions/transfer/prepare", async (c) => {
         tokenAddress: resolved.address,
         rawAmount,
       },
-      signPayload: built.tx,
+      signPayload: unsignedTx,
     });
     return c.json(toApiApproval(approval), 201);
   } catch (err) {
@@ -433,8 +423,8 @@ transactionRoutes.post("/transactions/transfer/confirm", (c) =>
     });
     if (!verification.ok) return { rejected: verification.reason };
 
-    const result = await callSeraToolSafely("sera.send_transfer", () =>
-      sendTransfer(rawTx),
+    const result = await callSeraToolSafely("onchain.send_transfer", () =>
+      broadcastSignedTransfer(rawTx),
     );
     return { txHash: pickTxHash(result) };
   }),

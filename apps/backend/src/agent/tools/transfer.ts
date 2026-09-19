@@ -5,7 +5,8 @@ import { createApprovalRequest } from "../../store/approvals.js";
 import { getWallet } from "../../store/wallets.js";
 import { checkSufficientBalance, FAUCET_GUIDANCE } from "../balance-check.js";
 import { callSeraToolSafely, toUserFacingMessage } from "../errors.js";
-import { buildTransfer, resolveToken } from "../sera-tools.js";
+import { buildUnsignedTransfer } from "../onchain-transfer.js";
+import { resolveToken } from "../sera-tools.js";
 
 const TRANSFER_APPROVAL_TTL_SECONDS = 300;
 
@@ -76,18 +77,16 @@ export function createTransferIntentTool(
           };
         }
 
-        const built = (await callSeraToolSafely("sera.build_transfer", () =>
-          buildTransfer({
-            token: resolved.address,
-            to: input.destinationAddress,
-            amount: rawAmount,
-            fromAddress: wallet.address,
-          }),
-        )) as { tx?: unknown };
-        if (!built?.tx)
-          return {
-            error: "送金トランザクションの生成結果を解釈できませんでした",
-          };
+        const unsignedTx = await callSeraToolSafely(
+          "onchain.build_transfer",
+          () =>
+            buildUnsignedTransfer({
+              tokenAddress: resolved.address,
+              to: input.destinationAddress,
+              rawAmount,
+              from: wallet.address,
+            }),
+        );
 
         const approvalId = crypto.randomUUID();
         await createApprovalRequest({
@@ -104,7 +103,7 @@ export function createTransferIntentTool(
             tokenAddress: resolved.address,
             rawAmount,
           },
-          signPayload: built.tx,
+          signPayload: unsignedTx,
         });
         onApprovalCreated(approvalId);
 

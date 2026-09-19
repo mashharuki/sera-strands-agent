@@ -107,7 +107,7 @@ cp .env.example .env       # Privy の App ID / 検証キー、Sepolia の RPC U
 | `VITE_API_URL` | frontend（ビルド時） | API Gateway の URL（`pnpm stack:deploy` が自動設定） |
 | `VITE_CHAT_URL` | frontend（ビルド時） | Function URL（同上） |
 | `PRIVY_APP_ID`, `PRIVY_VERIFICATION_KEY` | backend（デプロイ時に環境から引き継ぎ） | JWT 検証 |
-| `SEPOLIA_RPC_URL` | backend | **残高の取得（オンチェーン読み取り）**、送金トランザクションの検証・レシート確認 |
+| `SEPOLIA_RPC_URL` | backend | **残高の取得、送金トランザクションの組み立て・送信、レシート確認**（すべてオンチェーン。必須） |
 | `BALANCE_SYMBOLS` | backend（任意） | 残高を表示する Sera トークンのシンボル（カンマ区切り、既定 `USDC,XSGD,MYRT`） |
 | `BEDROCK_MODEL_ID`, `BEDROCK_REGION` | backend | Bedrock のモデル/リージョン。既定は Amazon Nova 2 Lite（`jp.amazon.nova-2-lite-v1:0`, `ap-northeast-1`）。他モデルに変える場合は CDK の IAM 許可も要変更 |
 | `POLICY_DRY_RUN` | backend | sera-mcp のドライラン |
@@ -130,7 +130,7 @@ pnpm --filter api-spec run postman:generate # Postman コレクションを再�
 ## テスト
 
 ```bash
-pnpm --filter backend test     # vitest（48 件）
+pnpm --filter backend test     # vitest（52 件）
 pnpm --filter cdk test         # jest（8 件、CloudFormation アサーション）
 pnpm --filter frontend lint
 pnpm --filter frontend build   # tsc -b && vite build（型チェック含む）
@@ -175,7 +175,7 @@ pnpm stack:destroy -- --stage dev
 
 | 項目 | 状態 | 根拠 |
 | --- | --- | --- |
-| backend ユニットテスト 48 件 | ✅ 通過 | 実行確認 |
+| backend ユニットテスト 52 件 | ✅ 通過 | 実行確認 |
 | CDK アサーション 8 件 / synth | ✅ 通過 | 実行確認 |
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
@@ -190,7 +190,10 @@ pnpm stack:destroy -- --stage dev
 
 ## 制約・未対応事項
 
-- Sera の API キー/シークレットは、swap の見積・実行や市場情報には不要ですが、`/balances`・`/transfer`・決済状態など**認証付きエンドポイントには必要**です（sera-mcp のソース `src/sera/client.ts` の `auth: true`、および認証なしで `/balances` が 401 を返すことを確認）。残高はこのため**オンチェーンから直接読み**ます（ウォレット保有分のみ。Sera の Vault 内残高は含みません）。送金（`build_transfer`/`send_transfer`）と決済状態の照会は資格情報が無いと動かない見込みで、未対応です。
+- Sera の API キー/シークレットは、swap の見積・実行や市場情報には不要ですが、`/balances`・`/transfer`・決済状態など**認証付きエンドポイントには必要**です（sera-mcp のソース `src/sera/client.ts` の `auth: true`、および認証なしで `/balances` が 401 を返すことを確認）。キーはウォレット単位で発行されるため、ユーザーごとに必要になる恐れがあり、このアプリはキー不要の経路を使います。
+  - **残高**: オンチェーンから直接読む（ウォレット保有分のみ。Sera の Vault 内残高は含まない）。
+  - **送金**: ERC-20 の `transfer` を viem で組み立て、ユーザーが署名した raw tx を RPC へ直接送る（承認内容との一致は送信前に検証）。状態はオンチェーンのレシートで確認。
+  - **swap の決済状態**: 公開の照会手段が無く、`sera.settlement_status` は認証必須です。キー未設定の間、swap の状態は `broadcast_pending` のままで、`statusCheckError` が付きます（成功と推測しません）。`swap` の実行結果は Sera の応答（`trade_id`）と、残高で確認してください。
 - 資格情報のローダー（Secrets Manager → sera-mcp）は実装済み。未設定でも sera-mcp は起動します。
 - EIP-2612 permit が必要な見積は未対応（`PERMIT_NOT_SUPPORTED` で拒否）。
 - 実行環境はサーバー側の運用者資格情報に依存する Sera ツールが多い。

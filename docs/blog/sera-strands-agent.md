@@ -198,3 +198,4 @@ README を参照してください。デプロイは `pnpm stack:deploy -- --sta
 - **Privy の「Verification key」と「App Secret」の取り違え**。`PRIVY_VERIFICATION_KEY` に App Secret を入れると全 API が 401 になる。App Secret は秘密なので、環境変数に入れてしまうと Lambda の設定や CloudFormation に平文で残る。コードで PEM 公開鍵かどうかを検査し、誤設定なら明示的に失敗させるようにした。
 - **エラーの握りつぶし**。原因をログに出さず 401/502 だけ返す作りだと、切り分けに時間がかかった。失敗の種別とツール名をログに残すようにした。フロントエンドも、エラーイベントを表示しないと「何も返ってこない」ように見える。
 - **Sera の `/balances` は認証必須**。認証なしで 401 を確認（sera-mcp のソースでも `auth: true`）。swap の見積・実行や市場情報は認証不要。残高は viem でオンチェーンから読む方式に変更した（Vault 内残高は対象外）。
+- **送金・状態確認もオンチェーンへ**。`build_transfer`/`send_transfer` も認証必須だったため、ERC-20 の `transfer` を viem で組み立て（nonce・ガス・手数料はRPCから取得、ガスに20%の余裕）、ユーザーが Privy で署名した raw tx を検証してから RPC へ送る方式にした。ステータスはレシートで判定。一方 **swap の決済状態には公開APIが無く**、キー無しでは確定できない（推測で成功にはしない）。この構成は実機での送金・署名は未検証 `TODO(実測)`。
