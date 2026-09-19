@@ -85,6 +85,10 @@ export class BackendStack extends cdk.Stack {
     const bundling: nodejs.BundlingOptions = {
       format: nodejs.OutputFormat.ESM,
       mainFields: ["module", "main"],
+      // ESMバンドルに含まれるCJS依存（cross-spawn等）が `require("child_process")` を使うため、
+      // require互換を注入する。無いと起動時に "Dynamic require ... is not supported" で全リクエストが失敗する。
+      banner:
+        "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);",
       commandHooks: {
         beforeBundling: () => [],
         beforeInstall: () => [],
@@ -106,13 +110,8 @@ export class BackendStack extends cdk.Stack {
     props.table.grantReadWriteData(apiFn);
     seraSecret.grantRead(apiFn);
 
-    const httpApi = new apigwv2.HttpApi(this, "HttpApi", {
-      corsPreflight: {
-        allowOrigins: ["*"],
-        allowMethods: [apigwv2.CorsHttpMethod.ANY],
-        allowHeaders: ["Authorization", "Content-Type"],
-      },
-    });
+    // CORSはバックエンド(Hono)側で処理する（apps/backend/src/index.ts）。
+    const httpApi = new apigwv2.HttpApi(this, "HttpApi");
     httpApi.addRoutes({
       path: "/{proxy+}",
       methods: [apigwv2.HttpMethod.ANY],
@@ -153,7 +152,11 @@ export class BackendStack extends cdk.Stack {
     const chatUrl = chatFn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
-      cors: { allowedOrigins: ["*"], allowedMethods: [lambda.HttpMethod.POST] },
+      cors: {
+        allowedOrigins: ["*"],
+        allowedMethods: [lambda.HttpMethod.POST],
+        allowedHeaders: ["Authorization", "Content-Type"],
+      },
     });
     this.chatUrl = chatUrl.url;
 

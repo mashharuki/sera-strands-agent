@@ -33,14 +33,20 @@ if (
   process.exit(1);
 }
 
-const run = (cmd, args, env = {}) =>
+const run = (cmd, args, env = {}, cwd = root) =>
   execFileSync(cmd, args, {
-    cwd: root,
+    cwd,
     stdio: "inherit",
     env: { ...process.env, ...env },
   });
+// cdk.json（app定義）は apps/cdk にあるため、cdkはそこで実行する。
 const cdk = (args, env) =>
-  run(cdkBin, [...args, "--context", `stage=${stage}`], env);
+  run(
+    cdkBin,
+    [...args, "--context", `stage=${stage}`],
+    env,
+    resolve(root, "apps/cdk"),
+  );
 const stackName = (name) => `SeraChatbot-${stage}-${name}`;
 
 function readOutputs() {
@@ -69,6 +75,11 @@ run("pnpm", ["--filter", "api-spec", "run", "generate"]);
 // 2. sera-mcpのバンドル（無ければ作る）
 if (!existsSync(resolve(root, "apps/backend/vendor-dist/sera-mcp.mjs"))) {
   run("pnpm", ["build:sera-mcp"]);
+}
+// cdkは対象スタック以外もsynthするため、FrontendStackが参照する apps/frontend/dist が
+// 存在しないとBackendのデプロイ時点で失敗する。無ければ仮ビルドしておく（手順4で本ビルドし直す）。
+if (!existsSync(resolve(root, "apps/frontend/dist"))) {
+  run("pnpm", ["--filter", "frontend", "build"]);
 }
 mkdirSync(dirname(outputsFile), { recursive: true });
 

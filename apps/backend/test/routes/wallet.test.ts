@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 process.env.PRIVY_APP_ID = "test-app-id";
-process.env.PRIVY_VERIFICATION_KEY = "test-verification-key";
+process.env.PRIVY_VERIFICATION_KEY =
+  "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----";
 
 const { app } = await import("../../src/index.js");
 

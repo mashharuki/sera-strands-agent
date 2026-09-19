@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { docClient } from "../../src/store/client.js";
 
 process.env.PRIVY_APP_ID = "test-app-id";
-process.env.PRIVY_VERIFICATION_KEY = "test-verification-key";
+process.env.PRIVY_VERIFICATION_KEY =
+  "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----";
 process.env.TABLE_NAME = "test-table";
 
 vi.mock("@privy-io/node", () => ({

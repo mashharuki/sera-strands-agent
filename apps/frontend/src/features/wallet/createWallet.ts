@@ -17,14 +17,20 @@ export type WalletCreationState =
  * FR-001, FR-002（既存ウォレットがあれば作成せず既存情報を返す）。
  */
 export function useCreateSeraWallet() {
-  const { getAccessToken } = usePrivy();
+  const { getAccessToken, user } = usePrivy();
   const { createWallet } = useCreateWallet();
   const [state, setState] = useState<WalletCreationState>({ status: "idle" });
 
   const run = useCallback(async () => {
     setState({ status: "creating" });
     try {
-      const privyWallet = await createWallet();
+      // Privy側に埋め込みウォレットが既にある場合（バックエンドへの登録だけ未完了など）は
+      // 作成せず既存のものを登録する。作成すると "User already has an embedded wallet" になる。
+      const existing = user?.linkedAccounts.find(
+        (a) => a.type === "wallet" && a.walletClientType === "privy",
+      );
+      const privyWallet =
+        existing && "address" in existing ? existing : await createWallet();
       const client = createApiClient(getAccessToken);
       const { data, error } = await client.POST("/wallet", {
         params: {
@@ -41,7 +47,7 @@ export function useCreateSeraWallet() {
       setState({ status: "error", message });
       throw err;
     }
-  }, [createWallet, getAccessToken]);
+  }, [createWallet, getAccessToken, user]);
 
   return { state, createSeraWallet: run };
 }
