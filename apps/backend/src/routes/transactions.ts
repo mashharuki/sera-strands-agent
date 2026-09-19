@@ -21,6 +21,7 @@ import {
   verifyPermitSignature,
 } from "../agent/permit-verify.js";
 import { executeSwap, resolveToken } from "../agent/sera-tools.js";
+import { extractSwapEvidence } from "../agent/swap-evidence.js";
 import { verifySignedTransfer } from "../agent/tx-verify.js";
 import type { AuthedVariables } from "../auth/privy.js";
 import {
@@ -40,6 +41,7 @@ import {
   createTransaction,
   getTransaction,
   listTransactionsForUser,
+  type SwapEvidenceParams,
 } from "../store/transactions.js";
 import { getWallet } from "../store/wallets.js";
 
@@ -265,7 +267,10 @@ async function confirmApproval(
     signature: string,
     walletAddress: string,
     permitSignature?: string,
-  ) => Promise<{ txHash?: string } | { rejected: string }>,
+  ) => Promise<
+    | { txHash?: string; swapEvidence?: SwapEvidenceParams }
+    | { rejected: string }
+  >,
 ) {
   const userId = c.get("userId");
   const body = await c.req.json().catch(() => ({}));
@@ -383,6 +388,7 @@ async function confirmApproval(
       userId,
       type,
       txHash: result.txHash,
+      ...(result.swapEvidence && { swapEvidence: result.swapEvidence }),
     });
     await updateApprovalStatus(approvalId, "executed");
     return c.json(tx, 202);
@@ -432,7 +438,10 @@ transactionRoutes.post("/transactions/swap/confirm", (c) =>
       const result = await callSeraToolSafely("sera.execute_swap", () =>
         executeSwap(approval.quoteId as string, signature, permit),
       );
-      return { txHash: pickTxHash(result) };
+      return {
+        txHash: pickTxHash(result),
+        swapEvidence: extractSwapEvidence(approval.signPayload),
+      };
     },
   ),
 );

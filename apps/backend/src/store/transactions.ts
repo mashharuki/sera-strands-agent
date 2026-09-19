@@ -13,6 +13,19 @@ export type ChainState =
   | "confirmed_failed"
   | "unknown";
 
+/** swapの決済確認（オンチェーンのTransferログとの突き合わせ）に使う、署名済み見積の値。 */
+export interface SwapEvidenceParams {
+  taker: string;
+  inputToken: string;
+  outputToken: string;
+  /** 最小単位(uint256)の10進文字列 */
+  maxInputAmount: string;
+  minOutputAmount: string;
+  recipient: string;
+  /** 見積の期限（epoch秒）。これを過ぎたswapは決済されない。 */
+  deadline: number;
+}
+
 export interface TransactionRecord {
   /** 1つのApprovalRequestに対して高々1つのTransactionしか生まれないため、`approvalId`をそのまま使う。 */
   transactionId: string;
@@ -20,6 +33,8 @@ export interface TransactionRecord {
   userId: string;
   type: ApprovalType;
   txHash?: string;
+  /** swapのみ。APIキー無しで決済を確認するための値（swap-evidence.ts）。 */
+  swapEvidence?: SwapEvidenceParams;
   chainState: ChainState;
   broadcastAt: string;
   confirmedAt?: string;

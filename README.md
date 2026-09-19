@@ -130,7 +130,7 @@ pnpm --filter api-spec run postman:generate # Postman コレクションを再�
 ## テスト
 
 ```bash
-pnpm --filter backend test     # vitest（74 件）
+pnpm --filter backend test     # vitest（91 件）
 pnpm --filter cdk test         # jest（8 件、CloudFormation アサーション）
 pnpm --filter frontend lint
 pnpm --filter frontend build   # tsc -b && vite build（型チェック含む）
@@ -175,7 +175,7 @@ pnpm stack:destroy -- --stage dev
 
 | 項目 | 状態 | 根拠 |
 | --- | --- | --- |
-| backend ユニットテスト 74 件 | ✅ 通過 | 実行確認 |
+| backend ユニットテスト 91 件 | ✅ 通過 | 実行確認 |
 | CDK アサーション 8 件 / synth | ✅ 通過 | 実行確認 |
 | backend/cdk `tsc --noEmit`、frontend build/oxlint、生成コード差分なし | ✅ 通過 | 実行確認 |
 | sera-mcp のバンドルが Lambda アセットに含まれる | ✅ | `cdk.out` を確認 |
@@ -186,7 +186,9 @@ pnpm stack:destroy -- --stage dev
 | Privy ログイン・ウォレット作成/登録 | ✅ | ユーザー確認（アドレス取得） |
 | チャット（Bedrock Nova 2 Lite + ツール呼び出し + ストリーミング）で残高を回答 | ✅ | ユーザー確認（日本語で ETH/各トークン残高を回答） |
 | 残高取得（オンチェーン、Sera のトークン解決込み）と画面表示 | ✅ | ユーザー確認（デプロイ済み dev） |
-| Privy 署名（`useSignTypedData` 等） | ❌ 未検証 | |
+| swap の実行（見積 → 確認画面 → swap と permit の2回署名 → Sera へ送信 → 決済） | ✅ | ユーザー確認（MYRT 10 → USDT 約0.7、オンチェーン残高の変化で確認） |
+| Privy 署名（`useSignTypedData`、swap と EIP-2612 permit） | ✅ | 上記 swap で確認 |
+| 会話履歴の引き継ぎ（複数ターン） | ✅ | ユーザー確認 |
 | Sera 応答の形（`get_coin_metadata`、`fee_breakdown`、決済状態の語彙など） | ❌ 実機未確認（ソースからの推定） | |
 | ブラウザ E2E、Newman 実行 | ❌ 未実施 | |
 | SC-001 / SC-002 の計測 | ❌ 未計測 | |
@@ -196,9 +198,9 @@ pnpm stack:destroy -- --stage dev
 - Sera の API キー/シークレットは、swap の見積・実行や市場情報には不要ですが、`/balances`・`/transfer`・決済状態など**認証付きエンドポイントには必要**です（sera-mcp のソース `src/sera/client.ts` の `auth: true`、および認証なしで `/balances` が 401 を返すことを確認）。キーはウォレット単位で発行されるため、ユーザーごとに必要になる恐れがあり、このアプリはキー不要の経路を使います。
   - **残高**: オンチェーンから直接読む。対象は Sera のレジストリ（公開の `GET /tokens`）に登録された全トークンで、残高0は省略（ウォレット保有分のみ。Sera の Vault 内残高は含まない）。
   - **送金**: ERC-20 の `transfer` を viem で組み立て、ユーザーが署名した raw tx を RPC へ直接送る（承認内容との一致は送信前に検証）。状態はオンチェーンのレシートで確認。
-  - **swap の決済状態**: 公開の照会手段が無く、`sera.settlement_status` は認証必須です。キー未設定の間、swap の状態は `broadcast_pending` のままで、`statusCheckError` が付きます（成功と推測しません）。`swap` の実行結果は Sera の応答（`trade_id`）と、残高で確認してください。
+  - **swap の決済状態**: 公開の照会手段が無い（`sera.settlement_status` は認証必須）ため、**オンチェーンの Transfer ログで確認**します。署名した見積（入力/出力トークン・最大入力額・最小受取額・受取先）と突き合わせ、「ウォレットの入力トークンが動き、かつ出力トークンが受取先に入った」の両方が見つかったときだけ `confirmed_success` にします。署名の期限＋10分を過ぎても決済が見つからなければ `confirmed_failed`（期限を過ぎた swap はコントラクト側で実行できないため）。ログの範囲取得（`eth_getLogs`）に制限のある RPC では失敗する場合があります。実機での確認は、再デプロイ後の状態表示で行ってください。
 - 資格情報のローダー（Secrets Manager → sera-mcp）は実装済み。未設定でも sera-mcp は起動します。
-- EIP-2612 permit が必要な見積（例: MYRT）は、確認画面で swap と permit の**2回署名**する方式に対応（サーバーで permit 署名がユーザー自身のものか検証してから Sera へ送信）。ユニットテスト済みで、Sera への実送信は未検証。
+- EIP-2612 permit が必要な見積（例: MYRT）は、確認画面で swap と permit の**2回署名**する方式に対応（サーバーで permit 署名がユーザー自身のものか検証してから Sera へ送信）。ユニットテスト済みで、MYRT の swap で実機確認済み。
 - 実行環境はサーバー側の運用者資格情報に依存する Sera ツールが多い。
 - Sepolia のみ。メインネットでの利用は想定していません。
 - 料金: Lambda / API Gateway / DynamoDB / S3 / CloudFront / Secrets Manager / Bedrock（トークン従量）が発生します。**実測前のため概算額は記載しません**。

@@ -11,6 +11,11 @@ import {
 } from "../store/transactions.js";
 import { callSeraToolSafely } from "./errors.js";
 import { settlementStatus } from "./sera-tools.js";
+import {
+  checkSwapSettled,
+  extractSwapEvidence,
+  type SwapCheck,
+} from "./swap-evidence.js";
 
 /**
  * FR-013, 憲章 原則IV: 取引の成功・失敗は、LLMの文章ではなく
@@ -71,13 +76,23 @@ function extractTxHash(raw: unknown): string | undefined {
   return r?.tx_hash ?? r?.txHash;
 }
 
+/** 期限後、ログの反映遅れを見込んで失敗確定までに待つ秒数。 */
+const EXPIRY_GRACE_SECONDS = 10 * 60;
+
 export interface ChainStatusDeps {
   fetchSettlement(uuid: string): Promise<unknown>;
+  /** swapの決済をオンチェーンのTransferログで確認する（APIキー不要）。 */
+  checkSwap(
+    tx: TransactionRecord,
+    evidence: NonNullable<TransactionRecord["swapEvidence"]>,
+  ): Promise<SwapCheck>;
   /** レシートが未確認（ブロック未取り込み）ならundefined。 */
   fetchReceipt(txHash: string): Promise<"success" | "reverted" | undefined>;
 }
 
 export const defaultChainStatusDeps: ChainStatusDeps = {
+  checkSwap: (tx, evidence) =>
+    checkSwapSettled(evidence, Date.parse(tx.broadcastAt)),
   fetchSettlement: (uuid) =>
     callSeraToolSafely("sera.settlement_status", () =>
       settlementStatus({ uuid }),
@@ -120,9 +135,28 @@ export async function refreshTransaction(
     let next: ChainState = "unknown";
     let txHash = tx.txHash;
 
-    if (tx.type === "swap") {
-      const approval: ApprovalRequestRecord | undefined =
-        await getApprovalRequest(tx.approvalId);
+    // 記録に確認用の値が無い取引（この機能の追加前に実行したswap）は、承認記録の署名データから復元する。
+    const approval: ApprovalRequestRecord | undefined =
+      tx.type === "swap" ? await getApprovalRequest(tx.approvalId) : undefined;
+    const swapEvidence =
+      tx.swapEvidence ??
+      (tx.type === "swap"
+        ? extractSwapEvidence(approval?.signPayload)
+        : undefined);
+
+    if (tx.type === "swap" && swapEvidence) {
+      // APIキー無しで確認できるオンチェーンの証拠を優先する。
+      const found = await deps.checkSwap(tx, swapEvidence);
+      if (found === "settled") next = "confirmed_success";
+      else if (
+        Date.now() / 1000 >
+        swapEvidence.deadline + EXPIRY_GRACE_SECONDS
+      ) {
+        // 署名済みの期限を過ぎたswapはコントラクト側で実行できないため、
+        // 期限後も決済（Transfer）が確認できなければ失敗として確定する。
+        next = "confirmed_failed";
+      }
+    } else if (tx.type === "swap") {
       if (!approval?.quoteId) return { transaction: tx };
       const raw = await deps.fetchSettlement(approval.quoteId);
       next = mapSettlementStatus(raw);
