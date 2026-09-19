@@ -30,3 +30,6 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# sera-mcp のビルド成果物（pnpm build:sera-mcp で生成）
+vendor-dist/

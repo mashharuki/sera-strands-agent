@@ -189,6 +189,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /transactions/approvals/{approvalId}:
+    get:
+      summary: 承認リクエストの内容を取得する
+      description: >
+        チャット経由でエージェントが作成したApprovalRequestを、フロントエンドの
+        確認画面（SwapConfirm/TransferConfirm）が表示するために取得する。
+      operationId: getApprovalRequest
+      parameters:
+        - name: approvalId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 承認リクエスト内容
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /transactions/transfer/prepare:
     post:
       summary: 送金の確認内容を作成する
@@ -444,6 +467,10 @@ components:
         expiresAt:
           type: string
           format: date-time
+        signPayload:
+          description: >
+            swapの場合はウォレットで署名すべきEIP-712ペイロード（sera-mcpの
+            get_quoteが返すroute_paramsをそのまま）。送金の場合は未署名トランザクション。
 
     ConfirmTransactionRequest:
       type: object
@@ -482,6 +509,11 @@ components:
           type: string
           format: date-time
           nullable: true
+        statusCheckError:
+          type: string
+          description: >
+            最新状態の照会に失敗した場合の理由。この場合chainStateは更新されておらず、
+            古い可能性がある（成功と誤認させないため、FR-014/FR-017）。
 
     ChatMessageRequest:
       type: object

@@ -1,0 +1,11 @@
+{
+  "name": "sera-chatbot (template)",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://<api-id>.execute-api.ap-northeast-1.amazonaws.com",
+      "enabled": true
+    },
+    { "key": "bearerToken", "value": "", "type": "secret", "enabled": true }
+  ]
+}

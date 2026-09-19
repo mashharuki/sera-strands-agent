@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+e2e/.auth/
+e2e/results.json
+test-results/
+playwright-report/

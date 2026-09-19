@@ -132,17 +132,17 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: ウォレットと残高を保有するユーザーがswapを依頼し、確認画面表示→承認→署名→実行完了までを単独で確認できる（`quickstart.md` シナリオ4）。
 
-- [ ] T049 [P] [US4] `apps/backend/src/store/approvals.ts`に`ApprovalRequest`エンティティ（`approvedContentSnapshot`・`expiresAt`、状態遷移: pending_confirmation→chat_approved→signed→executing→executed/cancelled/expired）を実装する
-- [ ] T050 [US4] `apps/backend/src/routes/transactions.ts`に`POST /transactions/swap/prepare`を実装する（必要情報不足時は400、FR-006/FR-008）
-- [ ] T051 [US4] `apps/backend/src/routes/transactions.ts`に`POST /transactions/swap/confirm`を実装し、`apps/backend/src/store/idempotency.ts`を用いて同一`approvalId`の二重実行を防止する（FR-012）
-- [ ] T052 [US4] `apps/backend/src/store/transactions.ts`に`Transaction`エンティティのCRUD（初期状態`broadcast_pending`での書き込み）を実装する
-- [ ] T053 [US4] `POST /transactions/swap/confirm`にQuote有効期限の再チェック（失効時は409、FR-011）を追加する
-- [ ] T054 [US4] `apps/backend/src/routes/transactions.ts`のswap confirm処理に、対象トークンの残高不足・ネットワーク手数料(ガス代)不足・署名拒否によりswapを実行できない場合のエラーハンドリングを追加し、理由とガス代不足時のfaucet入手方法案内をチャットへ返す（FR-016, FR-020, spec.md US4 AC6）
-- [ ] T055 [US4] `apps/frontend/src/features/transactions/SwapConfirm.tsx`にネットワーク・トークン・数量・手数料・スリッページを表示する確認画面を実装する
-- [ ] T056 [US4] `apps/frontend/src/features/transactions/signAndConfirm.ts`にPrivyクライアント側署名から`confirm`呼び出しまでの一連のフローを実装する
-- [ ] T057 [US4] `apps/backend/src/agent/tools/swap.ts`に、チャットでのswap意図検出を実装する。対象トークン・数量等が不足している場合はチャットで質問して補完し（FR-006）、揃った時点で`prepare`を呼び出し`approval_required`ストリームイベントを送出する
-- [ ] T058 [P] [US4] `apps/backend/test/routes/transactions.swap.test.ts`に、同一`approvalId`での複数回confirm呼び出しが1度しか実行されないことを検証するvitestを実装する（FR-012, SC-005）
-- [ ] T059 [P] [US4] `apps/backend/test/routes/transactions.swap.test.ts`に、失効したQuoteでのconfirmが拒否されることを検証するvitestを追加する（FR-011）
+- [X] T049 [P] [US4] `apps/backend/src/store/approvals.ts`に`ApprovalRequest`エンティティ（`approvedContentSnapshot`・`expiresAt`、状態遷移: pending_confirmation→chat_approved→signed→executing→executed/cancelled/expired）を実装する
+- [X] T050 [US4] `apps/backend/src/routes/transactions.ts`に`POST /transactions/swap/prepare`を実装する（必要情報不足時は400、FR-006/FR-008）
+- [X] T051 [US4] `apps/backend/src/routes/transactions.ts`に`POST /transactions/swap/confirm`を実装し、`apps/backend/src/store/idempotency.ts`を用いて同一`approvalId`の二重実行を防止する（FR-012）
+- [X] T052 [US4] `apps/backend/src/store/transactions.ts`に`Transaction`エンティティのCRUD（初期状態`broadcast_pending`での書き込み）を実装する
+- [X] T053 [US4] `POST /transactions/swap/confirm`にQuote有効期限の再チェック（失効時は409、FR-011）を追加する
+- [X] T054 [US4] `apps/backend/src/routes/transactions.ts`のswap confirm処理に、対象トークンの残高不足・ネットワーク手数料(ガス代)不足・署名拒否によりswapを実行できない場合のエラーハンドリングを追加し、理由とガス代不足時のfaucet入手方法案内をチャットへ返す（FR-016, FR-020, spec.md US4 AC6）
+- [X] T055 [US4] `apps/frontend/src/features/transactions/SwapConfirm.tsx`にネットワーク・トークン・数量・手数料・スリッページを表示する確認画面を実装する
+- [X] T056 [US4] `apps/frontend/src/features/transactions/signAndConfirm.ts`にPrivyクライアント側署名から`confirm`呼び出しまでの一連のフローを実装する
+- [X] T057 [US4] `apps/backend/src/agent/tools/swap.ts`に、チャットでのswap意図検出を実装する。対象トークン・数量等が不足している場合はチャットで質問して補完し（FR-006）、揃った時点で`prepare`を呼び出し`approval_required`ストリームイベントを送出する
+- [X] T058 [P] [US4] `apps/backend/test/routes/transactions.swap.test.ts`に、同一`approvalId`での複数回confirm呼び出しが1度しか実行されないことを検証するvitestを実装する（FR-012, SC-005）
+- [X] T059 [P] [US4] `apps/backend/test/routes/transactions.swap.test.ts`に、失効したQuoteでのconfirmが拒否されることを検証するvitestを追加する（FR-011）
 
 **チェックポイント**: US1〜US4が組み合わさり、資産変更系操作（swap）を含む中核フローがデモ可能。
 
@@ -154,13 +154,13 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: ウォレットと残高を保有するユーザーが送金を依頼し、確認画面表示→承認→署名→実行完了までを単独で確認できる（`quickstart.md` シナリオ5）。
 
-- [ ] T060 [US5] `apps/backend/src/routes/transactions.ts`に`POST /transactions/transfer/prepare`を実装する（送金先アドレス必須、FR-006/FR-008）
-- [ ] T061 [US5] `apps/backend/src/routes/transactions.ts`に`POST /transactions/transfer/confirm`を実装し、`buildTransfer`（未署名tx生成）→クライアント署名→`sendTransfer`（ブロードキャスト）の2段階フローを冪等に扱う（FR-012）
-- [ ] T062 [US5] `apps/backend/src/routes/transactions.ts`の`POST /transactions/transfer/confirm`に、`ApprovalRequest.expiresAt`に基づく確認内容の失効チェックを追加し、失効時は409を返しユーザーに再確認を求める（FR-011）
-- [ ] T063 [US5] `apps/frontend/src/features/transactions/TransferConfirm.tsx`に送金確認画面（宛先・数量・手数料表示）を実装する
-- [ ] T064 [US5] `apps/backend/src/agent/tools/transfer.ts`に、チャットでの送金意図検出を実装する。送金先・数量等が不足している場合はチャットで質問して補完し（FR-006）、揃った時点で`prepare`を呼び出す
-- [ ] T065 [US5] `apps/backend/src/routes/transactions.ts`に残高不足・ガス代不足（faucet案内、FR-020）・署名拒否の各エラーをチャットに明確に伝えるハンドリングを実装する（FR-016）
-- [ ] T066 [P] [US5] `apps/backend/test/routes/transactions.transfer.test.ts`に、二重クリック相当の重複confirmリクエストが二重送金を発生させないことを検証するvitestを実装する（FR-012, SC-005）
+- [X] T060 [US5] `apps/backend/src/routes/transactions.ts`に`POST /transactions/transfer/prepare`を実装する（送金先アドレス必須、FR-006/FR-008）
+- [X] T061 [US5] `apps/backend/src/routes/transactions.ts`に`POST /transactions/transfer/confirm`を実装し、`buildTransfer`（未署名tx生成）→クライアント署名→`sendTransfer`（ブロードキャスト）の2段階フローを冪等に扱う（FR-012）
+- [X] T062 [US5] `apps/backend/src/routes/transactions.ts`の`POST /transactions/transfer/confirm`に、`ApprovalRequest.expiresAt`に基づく確認内容の失効チェックを追加し、失効時は409を返しユーザーに再確認を求める（FR-011）
+- [X] T063 [US5] `apps/frontend/src/features/transactions/TransferConfirm.tsx`に送金確認画面（宛先・数量・手数料表示）を実装する
+- [X] T064 [US5] `apps/backend/src/agent/tools/transfer.ts`に、チャットでの送金意図検出を実装する。送金先・数量等が不足している場合はチャットで質問して補完し（FR-006）、揃った時点で`prepare`を呼び出す
+- [X] T065 [US5] `apps/backend/src/routes/transactions.ts`に残高不足・ガス代不足（faucet案内、FR-020）・署名拒否の各エラーをチャットに明確に伝えるハンドリングを実装する（FR-016）
+- [X] T066 [P] [US5] `apps/backend/test/routes/transactions.transfer.test.ts`に、二重クリック相当の重複confirmリクエストが二重送金を発生させないことを検証するvitestを実装する（FR-012, SC-005）
 
 **チェックポイント**: US1〜US5が組み合わさり、spec.mdが要求する全操作（読み取り＋swap＋送金）がデモ可能。
 
@@ -172,10 +172,10 @@ description: "Task list template for feature implementation"
 
 **Independent Test**: 実行済み（または実行中）のswap・送金が存在する状態で、チャットにその結果を尋ね、オンチェーン状態を反映した回答が返ることを単独で確認できる（`quickstart.md` シナリオ6）。
 
-- [ ] T067 [US6] `apps/backend/src/routes/transactions.ts`に`GET /transactions/{transactionId}`・`GET /transactions`を実装し、`settlement_status`によるチェーン状態照会を反映する
-- [ ] T068 [US6] `apps/backend/src/agent/tools/transaction-status.ts`に、チャットでの状態確認依頼に対し、DynamoDBの`Transaction.chainState`（検証済みの値のみ）を根拠に応答するツールを実装する（FR-013、LLM文章のみでの判定禁止）
-- [ ] T069 [P] [US6] `apps/frontend/src/features/transactions/TransactionHistory.tsx`に取引履歴・状態一覧表示を実装する
-- [ ] T070 [P] [US6] `apps/backend/test/agent/transaction-status.test.ts`に、`chainState`が`sera-mcp`からの検証済みレスポンスのみで更新され、自由文からは更新されないことを検証するvitestを実装する
+- [X] T067 [US6] `apps/backend/src/routes/transactions.ts`に`GET /transactions/{transactionId}`・`GET /transactions`を実装し、`settlement_status`によるチェーン状態照会を反映する
+- [X] T068 [US6] `apps/backend/src/agent/tools/transaction-status.ts`に、チャットでの状態確認依頼に対し、DynamoDBの`Transaction.chainState`（検証済みの値のみ）を根拠に応答するツールを実装する（FR-013、LLM文章のみでの判定禁止）
+- [X] T069 [P] [US6] `apps/frontend/src/features/transactions/TransactionHistory.tsx`に取引履歴・状態一覧表示を実装する
+- [X] T070 [P] [US6] `apps/backend/test/agent/transaction-status.test.ts`に、`chainState`が`sera-mcp`からの検証済みレスポンスのみで更新され、自由文からは更新されないことを検証するvitestを実装する
 
 **チェックポイント**: spec.mdの全6ユーザーストーリーが完全に動作する。
 
@@ -185,16 +185,16 @@ description: "Task list template for feature implementation"
 
 **Purpose**: 全ストーリー横断の品質ゲート、ドキュメント、デプロイ/削除フロー（`docs/memo.md` §10）。
 
-- [ ] T071 [P] `packages/api-spec/postman/`に`contracts/openapi.yaml`の全エンドポイントを網羅するPostmanコレクションと、Newman実行用npmスクリプトを追加する
-- [ ] T072 [P] CIに、OpenAPI Generatorの生成コマンドを実行し差分がないことを確認するステップ（生成コード整合性確認、憲章 原則VI）を追加する
-- [ ] T073 [P] `apps/frontend/e2e/chat-flow.spec.ts`にUS1〜US6のハッピーパスを通しで確認するPlaywright E2Eテストを実装する
-- [ ] T074 [P] `apps/cdk/test/`に新規スタック（data-stack, backend-stack, frontend-stack）のCDKスナップショット/ユニットテストを追加する
-- [ ] T075 ルートの`package.json`に`pnpm deploy -- --stage <stage>` / `pnpm destroy -- --stage <stage>`を実装する（コード生成→ビルド→CDKデプロイ→フロントエンド配信設定を一貫して行い、完了時にアプリURLを表示。`research.md`の決定に基づく）
-- [ ] T076 `README.md`を`docs/memo.md` §9の構成（目的・サンプル会話・アーキテクチャ・処理フロー・ディレクトリ構成・前提条件・ローカル開発・環境変数・API仕様・テスト方法・デプロイ/削除手順・トラブルシューティング・料金概算・制約・参照元）で更新する
-- [ ] T077 [P] `docs/architecture/`にdraw.io編集可能な`.drawio`形式のアーキテクチャ図と、README埋め込み用のSVG/PNGを作成する
-- [ ] T078 `docs/blog/`に技術ブログ原稿のドラフトを作成する（実装完了後、実測した実行結果・スクリーンショット・計測値のみを反映する。憲章 原則VII）
-- [ ] T079 `pnpm check`・`pnpm --filter backend build`・`pnpm --filter frontend build`・`pnpm --filter cdk build`・`pnpm --filter cdk test`を全て実行し、lint・型チェック・ビルドが通ることを確認する
-- [ ] T080 [P] `apps/frontend/e2e/chat-flow.spec.ts`（またはCI集計スクリプト）に、SC-001（ウォレット作成〜残高確認が5分以内）の実行時間アサーションと、SC-002（板/見積/履歴照会の80%が追加確認なしで一回のやり取りで回答される）を検証するテストケース集計を追加する
+- [x] T071 [P] `packages/api-spec/postman/`に`contracts/openapi.yaml`の全エンドポイントを網羅するPostmanコレクションと、Newman実行用npmスクリプトを追加する
+- [x] T072 [P] CIに、OpenAPI Generatorの生成コマンドを実行し差分がないことを確認するステップ（生成コード整合性確認、憲章 原則VI）を追加する
+- [x] T073 [P] `apps/frontend/e2e/chat-flow.spec.ts`にUS1〜US6のハッピーパスを通しで確認するPlaywright E2Eテストを実装する
+- [x] T074 [P] `apps/cdk/test/`に新規スタック（data-stack, backend-stack, frontend-stack）のCDKスナップショット/ユニットテストを追加する
+- [x] T075 ルートの`package.json`に`pnpm deploy -- --stage <stage>` / `pnpm destroy -- --stage <stage>`を実装する（コード生成→ビルド→CDKデプロイ→フロントエンド配信設定を一貫して行い、完了時にアプリURLを表示。`research.md`の決定に基づく）
+- [x] T076 `README.md`を`docs/memo.md` §9の構成（目的・サンプル会話・アーキテクチャ・処理フロー・ディレクトリ構成・前提条件・ローカル開発・環境変数・API仕様・テスト方法・デプロイ/削除手順・トラブルシューティング・料金概算・制約・参照元）で更新する
+- [x] T077 [P] `docs/architecture/`にdraw.io編集可能な`.drawio`形式のアーキテクチャ図と、README埋め込み用のSVG/PNGを作成する
+- [x] T078 `docs/blog/`に技術ブログ原稿のドラフトを作成する（実装完了後、実測した実行結果・スクリーンショット・計測値のみを反映する。憲章 原則VII）
+- [x] T079 `pnpm check`・`pnpm --filter backend build`・`pnpm --filter frontend build`・`pnpm --filter cdk build`・`pnpm --filter cdk test`を全て実行し、lint・型チェック・ビルドが通ることを確認する
+- [x] T080 [P] `apps/frontend/e2e/chat-flow.spec.ts`（またはCI集計スクリプト）に、SC-001（ウォレット作成〜残高確認が5分以内）の実行時間アサーションと、SC-002（板/見積/履歴照会の80%が追加確認なしで一回のやり取りで回答される）を検証するテストケース集計を追加する
 
 ---
 

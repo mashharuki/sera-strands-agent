@@ -61,6 +61,7 @@ describe("GET /wallet/balance", () => {
 
     expect(res.status).toBe(200);
     expect(seraCallLog).toHaveLength(1);
-    expect(seraCallLog[0].args.address).toBe("0xUserAAddress");
+    expect(seraCallLog[0].toolName).toBe("sera.get_balances");
+    expect(seraCallLog[0].args.owner_address).toBe("0xUserAAddress");
   });
 });

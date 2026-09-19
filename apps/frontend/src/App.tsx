@@ -1,6 +1,7 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { ChatShell } from "./features/chat/ChatShell.tsx";
 import { MarketPanel } from "./features/market/MarketPanel.tsx";
+import { TransactionHistory } from "./features/transactions/TransactionHistory.tsx";
 import { BalanceView } from "./features/wallet/BalanceView.tsx";
 import { WalletCreationFlow } from "./features/wallet/WalletCreationFlow.tsx";
 import "./App.css";
@@ -34,6 +35,7 @@ function App() {
       <WalletCreationFlow />
       <BalanceView />
       <MarketPanel />
+      <TransactionHistory />
       <ChatShell />
     </>
   );

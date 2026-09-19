@@ -233,6 +233,47 @@
 
 ---
 
+## 9-B. 実装中に判明した訂正: sera-mcpの実ツール名・引数・署名データ（Phase 7で実ソースと突き合わせ）
+
+送金実装の際に`sera-cx/sera-mcp`@`d6f50c1a`の`src/tools/registry.ts`・`schemas.ts`・`core.ts`・`signer.ts`を実読し、
+**Phase 4〜6の実装が前提にしていた名前・引数・形が誤っていた**ことが判明したため訂正した（`apps/backend/src/agent/sera-tools.ts`に集約）。
+当時のvitestはモックが誤った名前を受け入れていたため合格しており、**実接続では全ツール呼び出しが失敗する状態だった**。
+
+| 項目 | 誤っていた前提 | 実ソースで確認した事実 |
+|---|---|---|
+| ツール名 | `get_quote` `execute_swap` `get_balances` `probe_depth` `settlement_status` | すべて`sera.`接頭辞付き（例: `sera.get_quote`） |
+| get_balances引数 | `{address}` | `{owner_address}` |
+| get_quote引数 | `{fromToken,toToken,amount}` | `{from,to,amount,owner_address(必須)}` |
+| 板情報 | `probe_depth` | 正式な合成板は`sera.infer_book {base,quote}`（`probe_depth`は価格インパクト計測） |
+| settlement_status引数 | `{userId}` | `{owner_address,uuid?,trade_id?,limit?}` |
+| MCP応答 | 解析済みオブジェクトとして扱っていた | `content[].text`のJSON文字列。`isError`も要処理（`callSeraTool`で解析・例外化） |
+| 署名データ | `route_params`のみで署名可能 | `route_params`は**Intentのmessage部のみ**。domain（`sera://config`の`eip712_domain`）とIntent型を合成する必要あり |
+| permit | 未考慮 | quoteの`permit`が非nullならEIP-2612の追加署名（`permit_signature`+`permit_deadline`）が必須。**現状は未対応**として`PERMIT_NOT_SUPPORTED`で明示的に拒否 |
+| 送金 | `buildTransfer`/`sendTransfer` | `sera.build_transfer {token(コントラクトアドレス),to,amount(最小単位uint256),from_address}` → 未署名tx。`sera.send_transfer {raw_tx}`は署名済みtxを**検証せず**ブロードキャスト |
+| 認証 | 未考慮 | tx-builder/送信系・get_balances・settlement_statusは**サーバー側`SERA_API_KEY`/`SECRET`（運用者資格情報）が必要** |
+
+**安全上の対処**: `send_transfer`は宛先・数量を検証しないため、FR-010を守るには自前の検証が必須。
+`apps/backend/src/agent/tx-verify.ts`（viem）で、ブロードキャスト前に署名済みraw txをデコードし、
+トークンコントラクト・宛先・数量・署名者が承認内容と一致することを確認する（実署名txによるテストあり）。
+
+**未検証のまま残っている点**（実疎通が必要）: `get_coin_metadata`/`build_transfer`/`get_balances`の応答のネスト形状、
+`fee_breakdown`の構造、`expires_at`の形式、Sera側txオブジェクトのフィールド名（`gas`/`gasLimit`）とPrivy署名APIの対応、
+`eip712_domain`のフィールド構成。いずれもコード中で防御的に解釈しているが、S4/S5と同様に認証情報が揃った環境での確認が必要。
+
+## 9-A'. sera-mcpの取り込み（方針A: git submodule + バンドル）— 実施結果
+
+`sera-cx/sera-mcp`を`vendor/sera-mcp`にgit submoduleとして取り込み、**コミット`d6f50c1a`に固定**した（MIT。取り込み・再配布は可能）。
+
+- `pnpm build:sera-mcp`（`scripts/build-sera-mcp.mjs`）: 固定コミットであることを検証 → `npm ci --ignore-scripts` → `tsc` → esbuildで単一ファイル`apps/backend/vendor-dist/sera-mcp.mjs`（3.2MB）へバンドル。
+- **`better-sqlite3`（ネイティブ）はスタブへ差し替え**: sera-mcpの履歴DB専用で、静的importのため外部化すると起動時に落ちる。macで作ったバイナリはLambda(Linux)で動かないため、`SERA_HISTORY_DB`未設定なら元々インスタンス化されない点を利用し、誤って有効化した場合は沈黙せず例外になるスタブにした。
+- `apps/cdk/lib/backend-stack.ts`: `NodejsFunction`のcommandHooksで両Lambdaのコード直下へ同梱し、`SERA_MCP_BIN=/var/task/sera-mcp.mjs`を設定。**synth結果で両Lambdaの資産に`sera-mcp.mjs`が入っていることを確認済み**。
+- 資格情報（`SERA_API_KEY/SECRET`）は**スタック内のSecrets Manager**に保管する。CDKは**空のプレースホルダーのみ**を作成し（値はテンプレートに含まれず、再デプロイで設定済みの値は上書きされない）、実際の値はデプロイ後に利用者が`aws secretsmanager put-secret-value`で設定する。`removalPolicy: DESTROY`でdestroyと共に削除され、名前は固定しない（削除後の復旧期間による同名再作成の失敗を避けるため）。Lambdaには読み取り権限のみ付与し、`SERA_SECRET_ID`にはARNを渡す。ARNはスタック出力`SeraSecretArn`に出す。Secrets Managerの追加コスト（シークレット1件あたり月額課金）が発生する点はREADMEの料金概算に記載する。
+
+**未完・未検証**:
+1. バックエンド側で`SERA_SECRET_ID`のシークレットを読んで子プロセスに渡す処理は**未実装**（下記の環境制約）。
+2. バンドルした`sera-mcp.mjs`を**実際に起動して疎通した検証は未実施**（構文・自己完結性のみ確認）。ローカルでのサーバー起動が実行環境で許可されなかったため。
+3. シークレット未作成のままではSera資格情報を要するツールは実行時に失敗する（README/デプロイ前提条件に明記予定）。
+
 ## 9-A. 実装中に判明した新たな課題: sera-mcpはnpmレジストリに未公開
 
 **実コード確認（`/speckit-implement`実行中、2026-09-18）**: `npm view sera-mcp` / `npm view @sera-cx/sera-mcp`はいずれも404で、`sera-mcp`(v1)はnpm公開レジストリに存在しない。`package.json`の`mcpName: "io.github.sera-cx/sera-mcp"`はMCP Registry向けのメタデータであり、npm配布を意味しない。さらに`package.json`の`"build": "tsc"`スクリプトはあるが`"prepare"`スクリプトが無いため、GitHubから直接git依存（`github:sera-cx/sera-mcp#<commit>`）としてインストールしても、`bin`/`main`が指す`dist/`ディレクトリはビルドされず生成されない。
@@ -252,3 +293,12 @@
 - Claude Sonnet 4.6の東京リージョンIn-Region対応可否とトークン単価の詳細（§3、未解消。AWS Bedrock認証情報が必要なため本セッションでは検証不可）
 - Lambda内で`sera-mcp`を子プロセス起動する際のコールドスタート・メモリオーバーヘッド（§4.2、未解消。AWS環境での実測が必要）
 - Strands TS SDK（`@strands-agents/sdk`）からのBedrock実呼び出し・Privy embedded walletの署名互換性（S4/S5、未解消。AWS/Privyの認証情報が必要なため本セッションでは検証不可）
+
+## 3-A. モデル変更の記録（Amazon Nova 2 Lite）
+
+**Decision（2026-09-19、ユーザー指示）**: AWSクレジットで賄うため、既定モデルを Claude Sonnet 4.6 から **Amazon Nova 2 Lite** に変更する。§3 の選定（Claude Sonnet 4.6）はこの決定で置き換える。
+
+- モデルID: `jp.amazon.nova-2-lite-v1:0`（Geo推論ID）。`global.amazon.nova-2-lite-v1:0` も存在する。**ドキュメント確認**（AWS Bedrock ユーザーガイド「Nova 2 Lite」モデルカード、ap-northeast-1 がクロスリージョン推論の対応に含まれる）。
+- 環境変数 `BEDROCK_MODEL_ID` で差し替え可能。Claude 等へ戻す場合は CDK の IAM 許可（`backend-stack.ts`、現在は `amazon.nova-*` のみ）を広げる。
+- 副次的な発見: 変更前の CDK には Bedrock 呼び出しの IAM 権限が無かった。`bedrock:InvokeModel` / `InvokeModelWithResponseStream` を追加し、テストで確認。
+- **未確認**: Strands TS SDK + Nova でのツール呼び出し・ストリーミング、日本語応答品質（スパイクS4は Nova で実施し直す必要がある）、実際の単価とクレジット適用可否。

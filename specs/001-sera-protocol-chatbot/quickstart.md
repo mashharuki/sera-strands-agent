@@ -8,7 +8,7 @@
 
 - Node.js 22.x（[research.md](./research.md) §7・S1で確定次第、正式なバージョンを明記する）
 - pnpm（`packageManager`で指定されたバージョン）
-- AWSアカウント（Bedrock Claude Sonnet 4.6のモデルアクセスが`ap-northeast-1`で有効化済みであること）
+- AWSアカウント（Bedrockで使うモデル（既定: Amazon Nova 2 Lite、`jp.amazon.nova-2-lite-v1:0`）が`ap-northeast-1`で利用可能であること）
 - Privyアプリ（開発用App ID / Secret、Ethereum Sepoliaのembedded wallet作成を許可した設定）
 - Ethereum SepoliaのRPCエンドポイント（テスト用）
 - テスト用アカウントに配布するSepolia ETH（faucet等でユーザー自身が事前取得。spec.md Assumptions・FR-020参照。本アプリはガス代を肩代わりしない）
@@ -23,7 +23,7 @@ pnpm --filter cdk cdk -- bootstrap   # 初回のみ（AWS認証情報が設定�
 環境変数（`.env`相当、詳細な一覧は実装フェーズでREADMEに記載）:
 - Privy App ID / Secret
 - Sera MCP関連の接続設定（`sera-mcp`の署名モードは`external`を使用、[research.md](./research.md) §1.2）
-- Bedrockのモデル/リージョン設定（`jp.anthropic.claude-sonnet-4-6`等）
+- Bedrockのモデル/リージョン設定（`jp.amazon.nova-2-lite-v1:0`等）
 
 ## デプロイ（開発ステージ）
 

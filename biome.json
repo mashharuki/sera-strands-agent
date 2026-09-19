@@ -12,6 +12,12 @@
       "!.agents",
       "!.kiro/settings/templates",
       "!**/.wrangler",
+      "!.claude",
+      "!apps/frontend/public",
+      "!vendor",
+      "!**/generated",
+      "!**/vendor-dist",
+      "!**/cdk.out",
       "!apps/frontend/env.d.ts",
       "!apps/server/src/worker-configuration.d.ts",
       "!apps/facilitator/src/worker-configuration.d.ts"

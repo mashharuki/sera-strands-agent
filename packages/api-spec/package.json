@@ -12,12 +12,16 @@
   "scripts": {
     "generate": "openapi-typescript ./openapi.yaml -o ./generated/types.ts",
     "generate:check": "pnpm run generate && git diff --exit-code -- generated/types.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postman:generate": "openapi2postmanv2 -s openapi.yaml -o postman/collection.json -p",
+    "test:api": "newman run postman/collection.json -e postman/environment.local.json"
   },
   "dependencies": {
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
+    "newman": "^6.2.2",
+    "openapi-to-postmanv2": "^6.3.3",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.7.3"
   },

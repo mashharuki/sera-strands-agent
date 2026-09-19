@@ -1,0 +1,1754 @@
+{
+  "item": [
+    {
+      "name": "wallet",
+      "description": "",
+      "item": [
+        {
+          "id": "d52af60a-45fe-4699-811b-ec85086a7158",
+          "name": "自分のウォレット情報を取得する",
+          "request": {
+            "name": "自分のウォレット情報を取得する",
+            "description": {
+              "content": "FR-003, FR-004 (所有権検証) に対応。未作成の場合は404。",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": ["wallet"],
+              "host": ["{{baseUrl}}"],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "body": {},
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "c03d14dd-6ab5-4f49-8732-4805f8544162",
+              "name": "ウォレット情報",
+              "originalRequest": {
+                "url": {
+                  "path": ["wallet"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"userId\": \"<string>\",\n  \"address\": \"<string>\",\n  \"chainId\": \"<integer>\",\n  \"createdAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "6cd4d401-852e-438e-9e74-47ab0fa70968",
+              "name": "対象が見つからない",
+              "originalRequest": {
+                "url": {
+                  "path": ["wallet"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "609254f2-4e05-4ccf-a208-dfbb36f605f4",
+          "name": "ウォレットを作成する（冪等）",
+          "request": {
+            "name": "ウォレットを作成する（冪等）",
+            "description": {
+              "content": "FR-001, FR-002。既に存在する場合は新規作成せず既存情報を返す。 addressはPrivy embedded walletがクライアント側で発行したアドレスを渡す （サーバー側は秘密鍵を扱わない、research.md §5.2）。\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": ["wallet"],
+              "host": ["{{baseUrl}}"],
+              "query": [
+                {
+                  "disabled": false,
+                  "description": {
+                    "content": "(Required) ",
+                    "type": "text/plain"
+                  },
+                  "key": "address",
+                  "value": "<string>"
+                },
+                {
+                  "disabled": false,
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "key": "chainId",
+                  "value": "11155111"
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {},
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "1b1a6e5f-13b1-40df-8a40-6c0d960d72ba",
+              "name": "既存ウォレットが存在した場合",
+              "originalRequest": {
+                "url": {
+                  "path": ["wallet"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      },
+                      "key": "address",
+                      "value": "<string>"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "chainId",
+                      "value": "11155111"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"userId\": \"<string>\",\n  \"address\": \"<string>\",\n  \"chainId\": \"<integer>\",\n  \"createdAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "b78a7b6d-f224-4a0d-857d-4272607e9c54",
+              "name": "新規作成した場合",
+              "originalRequest": {
+                "url": {
+                  "path": ["wallet"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      },
+                      "key": "address",
+                      "value": "<string>"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "key": "chainId",
+                      "value": "11155111"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {}
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"userId\": \"<string>\",\n  \"address\": \"<string>\",\n  \"chainId\": \"<integer>\",\n  \"createdAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "balance",
+          "description": "",
+          "item": [
+            {
+              "id": "b0b3e67e-33d2-45a4-b1b1-64ec44272ffa",
+              "name": "自分のウォレット残高を取得する",
+              "request": {
+                "name": "自分のウォレット残高を取得する",
+                "description": {
+                  "content": "FR-003。読み取り専用操作。",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": ["wallet", "balance"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {},
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "73f8644b-5304-4ade-82be-0df1fe426526",
+                  "name": "残高一覧",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["wallet", "balance"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"walletAddress\": \"<string>\",\n  \"balances\": [\n    {\n      \"token\": \"<string>\",\n      \"amount\": \"<string>\"\n    },\n    {\n      \"token\": \"<string>\",\n      \"amount\": \"<string>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "35b943a0-8c01-4ef5-adb6-c2becdc1632b",
+                  "name": "対象が見つからない",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["wallet", "balance"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "market",
+      "description": "",
+      "item": [
+        {
+          "name": "orderbook",
+          "description": "",
+          "item": [
+            {
+              "id": "8b72dbaa-570c-4e29-a5e8-18a7109fb73a",
+              "name": "板情報（参考値）を取得する",
+              "request": {
+                "name": "板情報（参考値）を取得する",
+                "description": {
+                  "content": "FR-005。sera-mcpの infer_book/probe_depth による合成ラダー。 実データの板情報ではないため isSynthetic=true を含む (research.md §1.3)。\n",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": ["market", "orderbook"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      },
+                      "key": "pair",
+                      "value": "<string>"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {},
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "31509e96-427a-4642-9916-7faa06048b11",
+                  "name": "板情報（参考値）",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["market", "orderbook"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [
+                        {
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          },
+                          "key": "pair",
+                          "value": "<string>"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"pair\": \"<string>\",\n  \"isSynthetic\": \"<boolean>\",\n  \"bids\": [\n    {\n      \"price\": \"<string>\",\n      \"size\": \"<string>\"\n    },\n    {\n      \"price\": \"<string>\",\n      \"size\": \"<string>\"\n    }\n  ],\n  \"asks\": [\n    {\n      \"price\": \"<string>\",\n      \"size\": \"<string>\"\n    },\n    {\n      \"price\": \"<string>\",\n      \"size\": \"<string>\"\n    }\n  ]\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "quote",
+          "description": "",
+          "item": [
+            {
+              "id": "7c9ada28-ed0c-4433-99fc-64dde0173d74",
+              "name": "swapの価格見積もりを取得する",
+              "request": {
+                "name": "swapの価格見積もりを取得する",
+                "description": {
+                  "content": "FR-005, FR-011（有効期限を含む）。",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": ["market", "quote"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      },
+                      "key": "fromToken",
+                      "value": "<string>"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      },
+                      "key": "toToken",
+                      "value": "<string>"
+                    },
+                    {
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      },
+                      "key": "amount",
+                      "value": "<string>"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {},
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "93856c6e-e4d5-42a7-8dc1-8f586c02fd3a",
+                  "name": "見積もり",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["market", "quote"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [
+                        {
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          },
+                          "key": "fromToken",
+                          "value": "<string>"
+                        },
+                        {
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          },
+                          "key": "toToken",
+                          "value": "<string>"
+                        },
+                        {
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          },
+                          "key": "amount",
+                          "value": "<string>"
+                        }
+                      ],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"quoteId\": \"<string>\",\n  \"fromToken\": \"<string>\",\n  \"toToken\": \"<string>\",\n  \"amount\": \"<string>\",\n  \"estimatedRate\": \"<string>\",\n  \"expiresAt\": \"<dateTime>\",\n  \"estimatedFee\": \"<string>\",\n  \"slippage\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "history",
+          "description": "",
+          "item": [
+            {
+              "id": "4cc4327d-23a1-44f6-9f72-cf29beb862ac",
+              "name": "自分の取引履歴を取得する",
+              "request": {
+                "name": "自分の取引履歴を取得する",
+                "description": {
+                  "content": "FR-005。sera-mcpのsettlement_status系レスポンスを正規化して返す。",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": ["market", "history"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {},
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "cc0a229b-be55-47fd-be0c-c52013d58a87",
+                  "name": "取引履歴一覧",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["market", "history"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"transactionId\": \"<string>\",\n    \"type\": \"swap\",\n    \"summary\": \"<string>\",\n    \"chainState\": \"unknown\",\n    \"occurredAt\": \"<dateTime>\"\n  },\n  {\n    \"transactionId\": \"<string>\",\n    \"type\": \"transfer\",\n    \"summary\": \"<string>\",\n    \"chainState\": \"broadcast_pending\",\n    \"occurredAt\": \"<dateTime>\"\n  }\n]",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "transactions",
+      "description": "",
+      "item": [
+        {
+          "name": "swap",
+          "description": "",
+          "item": [
+            {
+              "name": "prepare",
+              "description": "",
+              "item": [
+                {
+                  "id": "bed23a4a-4980-43a3-94d4-b77bdd4929ea",
+                  "name": "swapの確認内容を作成する",
+                  "request": {
+                    "name": "swapの確認内容を作成する",
+                    "description": {
+                      "content": "FR-006, FR-008。必要情報が揃っていない場合は400（チャット側で先に補完する）。",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": ["transactions", "swap", "prepare"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"quoteId\": \"<string>\",\n  \"amount\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "auth": null
+                  },
+                  "response": [
+                    {
+                      "id": "5dc4e001-27e4-461d-918b-8b8d4b6ecb9d",
+                      "name": "承認待ちのApprovalRequest",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "swap", "prepare"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": []
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "POST",
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"quoteId\": \"<string>\",\n  \"amount\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "status": "Created",
+                      "code": 201,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"approvalId\": \"<string>\",\n  \"type\": \"transfer\",\n  \"status\": \"pending_confirmation\",\n  \"approvedContentSnapshot\": {},\n  \"expiresAt\": \"<dateTime>\",\n  \"signPayload\": \"\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    }
+                  ],
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ]
+            },
+            {
+              "name": "confirm",
+              "description": "",
+              "item": [
+                {
+                  "id": "400efcc4-50d9-4581-a96a-33e6262dcaa3",
+                  "name": "承認・署名済みのswapを実行する",
+                  "request": {
+                    "name": "承認・署名済みのswapを実行する",
+                    "description": {
+                      "content": "FR-009, FR-010, FR-012（冪等）。approvalIdをキーに冪等処理し、 同一approvalIdへの複数回呼び出しは1度しか実行しない。\n",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": ["transactions", "swap", "confirm"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"approvalId\": \"<string>\",\n  \"signature\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "auth": null
+                  },
+                  "response": [
+                    {
+                      "id": "ef16b1b2-0057-42fc-8050-f0eab2f7050c",
+                      "name": "ブロードキャスト受理（オンチェーン確定は非同期、GET /transactions/{id}で確認）",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "swap", "confirm"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": []
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "POST",
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"approvalId\": \"<string>\",\n  \"signature\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "status": "Accepted",
+                      "code": 202,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"transactionId\": \"<string>\",\n  \"approvalId\": \"<string>\",\n  \"type\": \"transfer\",\n  \"chainState\": \"confirmed_success\",\n  \"txHash\": \"<string>\",\n  \"broadcastAt\": \"<dateTime>\",\n  \"confirmedAt\": \"<dateTime>\",\n  \"statusCheckError\": \"<string>\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    },
+                    {
+                      "id": "23315101-f6cd-49e5-a312-638fe2f9991a",
+                      "name": "承認内容が失効・変更済み、または既に実行済み（FR-011, FR-012）",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "swap", "confirm"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": []
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "POST",
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"approvalId\": \"<string>\",\n  \"signature\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "status": "Conflict",
+                      "code": 409,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    }
+                  ],
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "approvals",
+          "description": "",
+          "item": [
+            {
+              "name": "{approvalId}",
+              "description": "",
+              "item": [
+                {
+                  "id": "74eb9062-c99b-4ba1-ab80-e86a724c0634",
+                  "name": "承認リクエストの内容を取得する",
+                  "request": {
+                    "name": "承認リクエストの内容を取得する",
+                    "description": {
+                      "content": "チャット経由でエージェントが作成したApprovalRequestを、フロントエンドの 確認画面（SwapConfirm/TransferConfirm）が表示するために取得する。\n",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": ["transactions", "approvals", ":approvalId"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": [
+                        {
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "approvalId",
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          }
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {},
+                    "auth": null
+                  },
+                  "response": [
+                    {
+                      "id": "55e9134d-32a7-44b9-916a-9b61d81f65ea",
+                      "name": "承認リクエスト内容",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "approvals", ":approvalId"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "description": {
+                                "content": "(Required) ",
+                                "type": "text/plain"
+                              },
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "approvalId"
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "GET",
+                        "body": {}
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"approvalId\": \"<string>\",\n  \"type\": \"transfer\",\n  \"status\": \"pending_confirmation\",\n  \"approvedContentSnapshot\": {},\n  \"expiresAt\": \"<dateTime>\",\n  \"signPayload\": \"\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    },
+                    {
+                      "id": "942b9bde-8e57-48ab-811b-15064307bcd2",
+                      "name": "対象が見つからない",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "approvals", ":approvalId"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": [
+                            {
+                              "disabled": false,
+                              "description": {
+                                "content": "(Required) ",
+                                "type": "text/plain"
+                              },
+                              "type": "any",
+                              "value": "<string>",
+                              "key": "approvalId"
+                            }
+                          ]
+                        },
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "GET",
+                        "body": {}
+                      },
+                      "status": "Not Found",
+                      "code": 404,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    }
+                  ],
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "transfer",
+          "description": "",
+          "item": [
+            {
+              "name": "prepare",
+              "description": "",
+              "item": [
+                {
+                  "id": "3d4b5216-8af7-4fa2-87ee-1491191f7835",
+                  "name": "送金の確認内容を作成する",
+                  "request": {
+                    "name": "送金の確認内容を作成する",
+                    "description": {
+                      "content": "FR-006, FR-008。",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": ["transactions", "transfer", "prepare"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"token\": \"<string>\",\n  \"amount\": \"<string>\",\n  \"destinationAddress\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "auth": null
+                  },
+                  "response": [
+                    {
+                      "id": "5ba97d2e-18e6-4c04-b1bc-ddbe09f3c7a8",
+                      "name": "承認待ちのApprovalRequest",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "transfer", "prepare"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": []
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "POST",
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"token\": \"<string>\",\n  \"amount\": \"<string>\",\n  \"destinationAddress\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "status": "Created",
+                      "code": 201,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"approvalId\": \"<string>\",\n  \"type\": \"transfer\",\n  \"status\": \"pending_confirmation\",\n  \"approvedContentSnapshot\": {},\n  \"expiresAt\": \"<dateTime>\",\n  \"signPayload\": \"\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    }
+                  ],
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ]
+            },
+            {
+              "name": "confirm",
+              "description": "",
+              "item": [
+                {
+                  "id": "f79f2f39-67b1-4fa9-8fcf-d024988b7979",
+                  "name": "承認・署名済みの送金を実行する",
+                  "request": {
+                    "name": "承認・署名済みの送金を実行する",
+                    "description": {
+                      "content": "FR-009, FR-010, FR-012（冪等）。",
+                      "type": "text/plain"
+                    },
+                    "url": {
+                      "path": ["transactions", "transfer", "confirm"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": []
+                    },
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "method": "POST",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"approvalId\": \"<string>\",\n  \"signature\": \"<string>\"\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "auth": null
+                  },
+                  "response": [
+                    {
+                      "id": "4a5f0c62-6e8e-4606-aa39-201862930f5d",
+                      "name": "ブロードキャスト受理",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "transfer", "confirm"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": []
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "POST",
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"approvalId\": \"<string>\",\n  \"signature\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "status": "Accepted",
+                      "code": 202,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"transactionId\": \"<string>\",\n  \"approvalId\": \"<string>\",\n  \"type\": \"transfer\",\n  \"chainState\": \"confirmed_success\",\n  \"txHash\": \"<string>\",\n  \"broadcastAt\": \"<dateTime>\",\n  \"confirmedAt\": \"<dateTime>\",\n  \"statusCheckError\": \"<string>\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    },
+                    {
+                      "id": "056304dd-4e9d-4a95-8825-22b70f439fa0",
+                      "name": "承認内容が失効・変更済み、または既に実行済み",
+                      "originalRequest": {
+                        "url": {
+                          "path": ["transactions", "transfer", "confirm"],
+                          "host": ["{{baseUrl}}"],
+                          "query": [],
+                          "variable": []
+                        },
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": {
+                              "content": "Added as a part of security scheme: bearer",
+                              "type": "text/plain"
+                            },
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "method": "POST",
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"approvalId\": \"<string>\",\n  \"signature\": \"<string>\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        }
+                      },
+                      "status": "Conflict",
+                      "code": 409,
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+                      "cookie": [],
+                      "_postman_previewlanguage": "json"
+                    }
+                  ],
+                  "event": [],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bd3e7efe-d34b-44b3-a207-b785be2882c8",
+          "name": "自分の取引一覧を取得する",
+          "request": {
+            "name": "自分の取引一覧を取得する",
+            "description": {
+              "content": "FR-015。実行直後に限らず後から参照できる。",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": ["transactions"],
+              "host": ["{{baseUrl}}"],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "body": {},
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "9490981b-bee5-4820-a4fb-29bfd803f638",
+              "name": "取引一覧",
+              "originalRequest": {
+                "url": {
+                  "path": ["transactions"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"transactionId\": \"<string>\",\n    \"approvalId\": \"<string>\",\n    \"type\": \"transfer\",\n    \"chainState\": \"unknown\",\n    \"txHash\": \"<string>\",\n    \"broadcastAt\": \"<dateTime>\",\n    \"confirmedAt\": \"<dateTime>\",\n    \"statusCheckError\": \"<string>\"\n  },\n  {\n    \"transactionId\": \"<string>\",\n    \"approvalId\": \"<string>\",\n    \"type\": \"swap\",\n    \"chainState\": \"broadcast_pending\",\n    \"txHash\": \"<string>\",\n    \"broadcastAt\": \"<dateTime>\",\n    \"confirmedAt\": \"<dateTime>\",\n    \"statusCheckError\": \"<string>\"\n  }\n]",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "name": "{transactionId}",
+          "description": "",
+          "item": [
+            {
+              "id": "d0de7a48-4f53-4fc7-bc68-749359abec2b",
+              "name": "特定の取引の状態・結果を取得する",
+              "request": {
+                "name": "特定の取引の状態・結果を取得する",
+                "description": {
+                  "content": "FR-013, FR-014, FR-015。chainStateはbroadcast_pending/confirmed_success/confirmed_failed/unknownを区別する。",
+                  "type": "text/plain"
+                },
+                "url": {
+                  "path": ["transactions", ":transactionId"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": [
+                    {
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "transactionId",
+                      "disabled": false,
+                      "description": {
+                        "content": "(Required) ",
+                        "type": "text/plain"
+                      }
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {},
+                "auth": null
+              },
+              "response": [
+                {
+                  "id": "dedf76e5-4359-4a29-b627-066a9c20fff7",
+                  "name": "取引状態",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["transactions", ":transactionId"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          },
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "transactionId"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"transactionId\": \"<string>\",\n  \"approvalId\": \"<string>\",\n  \"type\": \"transfer\",\n  \"chainState\": \"confirmed_success\",\n  \"txHash\": \"<string>\",\n  \"broadcastAt\": \"<dateTime>\",\n  \"confirmedAt\": \"<dateTime>\",\n  \"statusCheckError\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "id": "75a84fb9-dffe-4615-83f1-eae5f18be00e",
+                  "name": "対象が見つからない",
+                  "originalRequest": {
+                    "url": {
+                      "path": ["transactions", ":transactionId"],
+                      "host": ["{{baseUrl}}"],
+                      "query": [],
+                      "variable": [
+                        {
+                          "disabled": false,
+                          "description": {
+                            "content": "(Required) ",
+                            "type": "text/plain"
+                          },
+                          "type": "any",
+                          "value": "<string>",
+                          "key": "transactionId"
+                        }
+                      ]
+                    },
+                    "header": [
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      },
+                      {
+                        "description": {
+                          "content": "Added as a part of security scheme: bearer",
+                          "type": "text/plain"
+                        },
+                        "key": "Authorization",
+                        "value": "Bearer <token>"
+                      }
+                    ],
+                    "method": "GET",
+                    "body": {}
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+                  "cookie": [],
+                  "_postman_previewlanguage": "json"
+                }
+              ],
+              "event": [],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "chat",
+      "description": "",
+      "item": [
+        {
+          "id": "2035a026-5587-44c6-916e-ad9af7945c1c",
+          "name": "チャットへの自然言語メッセージを送信する（ストリーミング応答）",
+          "request": {
+            "name": "チャットへの自然言語メッセージを送信する（ストリーミング応答）",
+            "description": {
+              "content": "FR-001〜FR-008の自然言語インターフェース窓口。エージェントが swap/送金の意図を検出した場合、内部でprepare相当の処理を行い、 ApprovalRequestへの参照をストリームイベントとして返す。 実際の配信はAPI Gatewayではなく Lambda Function URL （レスポンスストリーミング）を使用する想定（research.md §4.1）。\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": ["chat"],
+              "host": ["{{baseUrl}}"],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/x-ndjson"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+              "options": {
+                "raw": {
+                  "headerFamily": "json",
+                  "language": "json"
+                }
+              }
+            },
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "900d067c-ec54-4fc9-ba90-ca0bb35e8444",
+              "name": "ストリーミングされたエージェント応答（フレーミング詳細は実装フェーズで確定）",
+              "originalRequest": {
+                "url": {
+                  "path": ["chat"],
+                  "host": ["{{baseUrl}}"],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/x-ndjson"
+                  },
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"<string>\",\n  \"message\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "headerFamily": "json",
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/x-ndjson"
+                }
+              ],
+              "body": "{\n  \"eventType\": \"token\",\n  \"payload\": {}\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "type": "any",
+        "value": "{{bearerToken}}",
+        "key": "token"
+      }
+    ]
+  },
+  "event": [],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "/"
+    }
+  ],
+  "info": {
+    "_postman_id": "dcc20b17-97c0-4806-845b-ef7fc146bad5",
+    "name": "Sera Protocol AIチャットボット API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "REST API契約の正本（/speckit-plan Phase 1 出力）。実装は packages/api-spec/openapi.yaml に配置し、OpenAPI Generator でTypeScriptクライアントを生成する （research.md §6.2）。MCPツール定義（sera-mcp側）は本契約に含めない。 詳細は contracts/mcp-tools.md を参照。 このファイルはスケルトンであり、全スキーマ・全エラーレスポンスを網羅した 最終版ではない。実装詳細（バリデーション制約の値等）は /speckit-tasks で確定する。\n",
+      "type": "text/plain"
+    }
+  }
+}

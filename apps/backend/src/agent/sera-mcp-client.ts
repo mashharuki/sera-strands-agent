@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { loadSeraCredentials, type SeraCredentials } from "./sera-auth";
 
 /**
  * sera-mcp(v1) は npm レジストリに未公開のため（research.md §9-A）、
@@ -21,7 +22,7 @@ let readyPromise: Promise<Client> | undefined;
 
 const PORT = Number(process.env.SERA_MCP_PORT ?? 3848);
 
-function spawnSeraMcp(): ChildProcess {
+function spawnSeraMcp(credentials?: SeraCredentials): ChildProcess {
   const bin = process.env.SERA_MCP_BIN;
   if (!bin) {
     throw new Error(
@@ -43,6 +44,11 @@ function spawnSeraMcp(): ChildProcess {
     {
       env: {
         ...process.env,
+        // 資格情報は子プロセスの環境変数としてのみ渡す（ログ・レスポンスには出さない）
+        ...(credentials && {
+          SERA_API_KEY: credentials.apiKey,
+          SERA_API_SECRET: credentials.apiSecret,
+        }),
         SERA_NETWORK: process.env.SERA_NETWORK ?? "sepolia",
         SERA_SIGNER_MODE: "external",
         SERA_HTTP_STATELESS: "true",
@@ -80,7 +86,7 @@ export async function getSeraMcpClient(): Promise<Client> {
   if (readyPromise) return readyPromise;
 
   readyPromise = (async () => {
-    child = spawnSeraMcp();
+    child = spawnSeraMcp(await loadSeraCredentials());
     const baseUrl = `http://127.0.0.1:${PORT}`;
     await waitForHealth(baseUrl);
 
@@ -99,11 +105,47 @@ export async function getSeraMcpClient(): Promise<Client> {
   return readyPromise;
 }
 
+interface McpToolResult {
+  isError?: boolean;
+  structuredContent?: unknown;
+  content?: Array<{ type: string; text?: string }>;
+}
+
+/**
+ * sera-mcpのツール名は`sera.`接頭辞付き（例: `sera.get_quote`。registry.ts参照）。
+ * MCPの生の結果（`content[].text`にJSON文字列）をパースして返し、
+ * `isError`の場合は成功と誤認しないよう例外にする（FR-017）。
+ */
 export async function callSeraTool(
   name: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
   const mcpClient = await getSeraMcpClient();
-  const result = await mcpClient.callTool({ name, arguments: args });
-  return result;
+  const result = (await mcpClient.callTool({
+    name,
+    arguments: args,
+  })) as McpToolResult;
+
+  const text = result.content?.find((c) => c.type === "text")?.text;
+  if (result.isError) {
+    throw new Error(text ?? `sera-mcp tool ${name} returned an error`);
+  }
+  if (result.structuredContent !== undefined) return result.structuredContent;
+  if (text === undefined) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+/** `sera://config`等のMCPリソース（JSON）を読む。EIP-712 domainの取得に使う。 */
+export async function readSeraResource(uri: string): Promise<unknown> {
+  const mcpClient = await getSeraMcpClient();
+  const res = await mcpClient.readResource({ uri });
+  const text =
+    res.contents?.[0] && "text" in res.contents[0]
+      ? res.contents[0].text
+      : undefined;
+  return typeof text === "string" ? JSON.parse(text) : undefined;
 }

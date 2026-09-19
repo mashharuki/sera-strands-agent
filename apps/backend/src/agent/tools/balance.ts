@@ -2,7 +2,7 @@ import { tool } from "@strands-agents/sdk";
 import { z } from "zod";
 import { getWallet } from "../../store/wallets.js";
 import { callSeraToolSafely, toUserFacingMessage } from "../errors.js";
-import { callSeraTool } from "../sera-mcp-client.js";
+import { getBalances } from "../sera-tools.js";
 
 /**
  * T037: 残高確認（読み取り専用）。FR-003, FR-004。
@@ -25,8 +25,8 @@ export function createBalanceTool(userId: string) {
         };
       }
       try {
-        const balances = await callSeraToolSafely("get_balances", () =>
-          callSeraTool("get_balances", { address: wallet.address }),
+        const balances = await callSeraToolSafely("sera.get_balances", () =>
+          getBalances(wallet.address),
         );
         return { hasWallet: true, address: wallet.address, balances };
       } catch (err) {

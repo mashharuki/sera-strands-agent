@@ -14,6 +14,17 @@ export interface QuoteRecord {
   slippage?: string;
   expiresAt: number;
   status: QuoteStatus;
+  /**
+   * sera-mcpの`get_quote`が返すEIP-712 `route_params`（署名対象データ）を
+   * そのまま不透明な値として保持する。正確なフィールド構造はresearch.md §1.3の
+   * 通り実疎通確認ができていないため、加工・解釈をせずクライアントへ引き渡す。
+   */
+  signPayload?: unknown;
+  /**
+   * 見積もりがEIP-2612 permitの追加署名を要求する場合true。permit署名フローは
+   * 未対応のため、この場合swapのprepareを拒否する（署名不足で失敗する前に明示する）。
+   */
+  requiresPermit?: boolean;
 }
 
 function quoteKey(quoteId: string) {

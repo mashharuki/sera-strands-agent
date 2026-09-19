@@ -16,6 +16,7 @@ const dataStack = new DataStack(app, `SeraChatbot-${stage}-Data`, { env });
 const backendStack = new BackendStack(app, `SeraChatbot-${stage}-Backend`, {
   env,
   table: dataStack.table,
+  stage,
 });
 backendStack.addStackDependency(dataStack);
 const frontendStack = new FrontendStack(app, `SeraChatbot-${stage}-Frontend`, {

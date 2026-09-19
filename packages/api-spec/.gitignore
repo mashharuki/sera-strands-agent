@@ -1,1 +1,2 @@
-generated
+# 実値を入れた環境ファイルはコミットしない
+postman/environment.local.json

@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # OpenAPI（packages/api-spec/openapi.yaml）から生成した型がコミット済みと一致することを確認（憲章 原則VI）
+      - name: Check generated code is up to date
+        run: pnpm --filter api-spec run generate:check
+
+      - name: Lint / format (biome)
+        run: pnpm exec biome check .
+
+      - name: Frontend lint (oxlint)
+        run: pnpm --filter frontend lint
+
+      - name: Backend tests
+        run: pnpm --filter backend test
+
+      - name: Build sera-mcp bundle (pinned submodule)
+        run: pnpm build:sera-mcp
+
+      - name: CDK tests
+        run: pnpm --filter cdk test
+
+      - name: Frontend typecheck + build
+        run: pnpm --filter frontend build

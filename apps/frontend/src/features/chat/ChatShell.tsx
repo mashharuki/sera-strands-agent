@@ -2,6 +2,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useCallback, useRef, useState } from "react";
 import type { ChatStreamEvent } from "shared";
 import { useSessionStore } from "../../store/session.ts";
+import { ApprovalConfirm } from "../transactions/ApprovalConfirm.tsx";
 
 interface ChatLine {
   id: string;
@@ -10,8 +11,8 @@ interface ChatLine {
 }
 
 /**
- * T029: 基本チャットUIシェル。POST /chat（Lambda Function URL、NDJSONストリーミング）を
- * 逐次パースして表示する。swap/送金の確認UI（approval_required）は各ストーリー実装時に追加する。
+ * T029/T057: 基本チャットUIシェル。POST /chat（Lambda Function URL、NDJSONストリーミング）を
+ * 逐次パースして表示する。`approval_required`イベントを受け取るとSwapConfirmを表示する（FR-008, FR-009）。
  */
 export function ChatShell() {
   const { getAccessToken } = usePrivy();
@@ -19,6 +20,9 @@ export function ChatShell() {
   const [lines, setLines] = useState<ChatLine[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [pendingApprovalId, setPendingApprovalId] = useState<string | null>(
+    null,
+  );
   const nextId = useRef(0);
 
   const sendMessage = useCallback(async () => {
@@ -72,6 +76,12 @@ export function ChatShell() {
               ),
             );
           }
+          if (event.eventType === "approval_required") {
+            const { approvalId } = event.payload as unknown as {
+              approvalId: string;
+            };
+            setPendingApprovalId(approvalId);
+          }
         }
       }
     } finally {
@@ -88,6 +98,12 @@ export function ChatShell() {
           </div>
         ))}
       </div>
+      {pendingApprovalId && (
+        <ApprovalConfirm
+          approvalId={pendingApprovalId}
+          onDone={() => setPendingApprovalId(null)}
+        />
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();

@@ -1,0 +1,3 @@
+[submodule "vendor/sera-mcp"]
+	path = vendor/sera-mcp
+	url = https://github.com/sera-cx/sera-mcp

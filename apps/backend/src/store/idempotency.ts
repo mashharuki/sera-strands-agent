@@ -1,5 +1,5 @@
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DeleteCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, tableName } from "./client.js";
 
 /**
@@ -29,4 +29,19 @@ export async function claimIdempotencyKey(key: string): Promise<boolean> {
     }
     throw err;
   }
+}
+
+/**
+ * 実行がbroadcast前に失敗した場合に呼ぶ。claim済みのキーを解放し、
+ * ユーザーが同じapprovalIdで正当に再試行できるようにする
+ * （例: 残高不足を解消した後の再試行）。broadcastが実際に成功した後は
+ * 絶対に呼び出してはならない。
+ */
+export async function releaseIdempotencyKey(key: string): Promise<void> {
+  await docClient.send(
+    new DeleteCommand({
+      TableName: tableName(),
+      Key: { pk: `IDEMPOTENCY#${key}`, sk: "CLAIM" },
+    }),
+  );
 }

@@ -3,14 +3,16 @@ import { Agent, type AgentConfig } from "@strands-agents/sdk";
 import { BedrockModel } from "@strands-agents/sdk/models/bedrock";
 
 /**
- * research.md §3 の決定: Claude Sonnet 4.6 を既定モデルとし、
- * ap-northeast-1 を軸にジオ推論プロファイル（jp.anthropic.claude-sonnet-4-6）を
- * 第一候補とする。モデルID・リージョンは環境変数化し、実装時に固定しない。
+ * 既定モデルは Amazon Nova 2 Lite（AWSクレジットで賄うため）。東京(ap-northeast-1)向けの
+ * ジオ推論プロファイル `jp.amazon.nova-2-lite-v1:0` を使う（AWSドキュメントのモデルカードで確認済み）。
+ * モデルID・リージョンは環境変数で差し替え可能（例: `global.amazon.nova-2-lite-v1:0`、
+ * Claudeに戻す場合は `BEDROCK_MODEL_ID=jp.anthropic.claude-sonnet-4-6` 等。
+ * その場合はCDKのIAM許可（apps/cdk/lib/backend-stack.ts）も見直すこと）。
+ * ツール呼び出しの精度・日本語品質は実機で未検証。
  */
 function createModel(): BedrockModel {
   return new BedrockModel({
-    modelId:
-      process.env.BEDROCK_MODEL_ID ?? "global.anthropic.claude-sonnet-4-6",
+    modelId: process.env.BEDROCK_MODEL_ID ?? "jp.amazon.nova-2-lite-v1:0",
     region: process.env.BEDROCK_REGION ?? "ap-northeast-1",
   });
 }

@@ -4,7 +4,7 @@ import {
   SeraToolError,
   toUserFacingMessage,
 } from "../agent/errors.js";
-import { callSeraTool } from "../agent/sera-mcp-client.js";
+import { getBalances } from "../agent/sera-tools.js";
 import type { AuthedVariables } from "../auth/privy.js";
 import { createWalletIfAbsent, getWallet } from "../store/wallets.js";
 
@@ -60,8 +60,8 @@ walletRoutes.get("/wallet/balance", async (c) => {
     );
   }
   try {
-    const balances = await callSeraToolSafely("get_balances", () =>
-      callSeraTool("get_balances", { address: wallet.address }),
+    const balances = await callSeraToolSafely("sera.get_balances", () =>
+      getBalances(wallet.address),
     );
     return c.json({ walletAddress: wallet.address, balances }, 200);
   } catch (err) {

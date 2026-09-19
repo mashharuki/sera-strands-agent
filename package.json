@@ -12,7 +12,10 @@
     "backend": "pnpm --filter backend",
     "frontend": "pnpm --filter frontend",
     "api-spec": "pnpm --filter api-spec",
-    "shared": "pnpm --filter shared"
+    "shared": "pnpm --filter shared",
+    "build:sera-mcp": "node scripts/build-sera-mcp.mjs",
+    "stack:deploy": "node scripts/stack.mjs deploy",
+    "stack:destroy": "node scripts/stack.mjs destroy"
   },
   "keywords": [
     "webmcp",
@@ -31,6 +34,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.11",
     "@types/node": "^26.4.0",
+    "esbuild": "^0.28.2",
     "knip": "^6.33.0",
     "typescript": "^7.0.2"
   }

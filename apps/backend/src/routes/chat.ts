@@ -3,6 +3,9 @@ import { createBalanceTool } from "../agent/tools/balance.js";
 import { createHistoryTool } from "../agent/tools/history.js";
 import { createOrderbookTool } from "../agent/tools/orderbook.js";
 import { createQuoteTool } from "../agent/tools/quote.js";
+import { createSwapIntentTool } from "../agent/tools/swap.js";
+import { createTransactionStatusTool } from "../agent/tools/transaction-status.js";
+import { createTransferIntentTool } from "../agent/tools/transfer.js";
 import { createWalletStatusTool } from "../agent/tools/wallet.js";
 import { appendMessage } from "../store/conversations.js";
 
@@ -34,12 +37,20 @@ export async function* streamChatTurn(
     content: input.message,
   });
 
+  const pendingApprovals: string[] = [];
   const agent = createAgent([
     createWalletStatusTool(input.userId),
     createBalanceTool(input.userId),
     createQuoteTool(input.userId),
     createOrderbookTool(),
     createHistoryTool(input.userId),
+    createSwapIntentTool(input.userId, (approvalId) =>
+      pendingApprovals.push(approvalId),
+    ),
+    createTransferIntentTool(input.userId, (approvalId) =>
+      pendingApprovals.push(approvalId),
+    ),
+    createTransactionStatusTool(input.userId),
   ]);
   let assistantText = "";
 
@@ -67,5 +78,8 @@ export async function* streamChatTurn(
     role: "assistant",
     content: assistantText,
   });
+  for (const approvalId of pendingApprovals) {
+    yield { eventType: "approval_required", payload: { approvalId } };
+  }
   yield { eventType: "done", payload: {} };
 }

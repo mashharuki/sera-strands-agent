@@ -1,7 +1,9 @@
 import { tool } from "@strands-agents/sdk";
 import { z } from "zod";
+import { getWallet } from "../../store/wallets.js";
+import { mapSettlementStatus } from "../chain-status.js";
 import { callSeraToolSafely, toUserFacingMessage } from "../errors.js";
-import { callSeraTool } from "../sera-mcp-client.js";
+import { settlementStatus } from "../sera-tools.js";
 
 export interface TradeHistoryItem {
   transactionId: string;
@@ -32,14 +34,7 @@ export function normalizeTradeHistory(raw: unknown): TradeHistoryItem[] {
       record.trade_id ?? record.uuid ?? record.id ?? "unknown",
     );
     const rawStatus = String(record.status ?? "").toLowerCase();
-    const chainState: TradeHistoryItem["chainState"] =
-      rawStatus.includes("success") || rawStatus.includes("confirmed")
-        ? "confirmed_success"
-        : rawStatus.includes("fail")
-          ? "confirmed_failed"
-          : rawStatus.includes("pending") || rawStatus.includes("broadcast")
-            ? "broadcast_pending"
-            : "unknown";
+    const chainState = mapSettlementStatus(record);
     return {
       transactionId,
       summary: `${record.type ?? "取引"} (${rawStatus || "状態不明"})`,
@@ -58,9 +53,11 @@ export function createHistoryTool(userId: string) {
       "自分の過去の取引履歴を取得する。板情報や現在の価格見積もりとは別物であることに注意すること。",
     inputSchema: z.void(),
     callback: async () => {
+      const wallet = await getWallet(userId);
+      if (!wallet) return { history: [] };
       try {
-        const raw = await callSeraToolSafely("settlement_status", () =>
-          callSeraTool("settlement_status", { userId }),
+        const raw = await callSeraToolSafely("sera.settlement_status", () =>
+          settlementStatus({ ownerAddress: wallet.address }),
         );
         return { history: normalizeTradeHistory(raw) };
       } catch (err) {
