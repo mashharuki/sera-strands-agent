@@ -1,12 +1,13 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
+import { type TranslationKey, useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 
-const STATE_LABEL: Record<string, string> = {
-  confirmed_success: "確定（成功）",
-  confirmed_failed: "確定（失敗）",
-  broadcast_pending: "送信済み・結果確定待ち",
-  unknown: "状態不明",
+const STATE_LABEL: Record<string, TranslationKey> = {
+  confirmed_success: "transactions.success",
+  confirmed_failed: "transactions.failed",
+  broadcast_pending: "transactions.pending",
+  unknown: "transactions.unknown",
 };
 
 const POLL_INTERVAL_MS = 10_000;
@@ -19,13 +20,14 @@ const POLL_INTERVAL_MS = 10_000;
  */
 export function TransactionHistory() {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
 
   const query = useQuery({
     queryKey: ["transactions"],
     queryFn: async () => {
       const client = createApiClient(getAccessToken);
       const { data, error } = await client.GET("/transactions", {});
-      if (error || !data) throw new Error("取引履歴の取得に失敗しました");
+      if (error || !data) throw new Error(t("transactions.error"));
       return data;
     },
     refetchInterval: (q) =>
@@ -34,41 +36,59 @@ export function TransactionHistory() {
         : false,
   });
 
-  if (query.isLoading) return <div className="tx-history">取引を確認中...</div>;
+  if (query.isLoading)
+    return (
+      <div className="tx-history">
+        <h3>{t("transactions.title")}</h3>
+        <p>{t("transactions.loading")}</p>
+      </div>
+    );
   if (query.isError) {
     return (
       <div className="tx-history tx-history--error">
-        取引履歴を取得できませんでした
+        <h3>{t("transactions.title")}</h3>
+        <p>{t("transactions.error")}</p>
       </div>
     );
   }
 
   const items = query.data ?? [];
   if (items.length === 0) {
-    return <div className="tx-history">実行済みの取引はまだありません</div>;
+    return (
+      <div className="tx-history">
+        <h3>{t("transactions.title")}</h3>
+        <p>{t("transactions.empty")}</p>
+      </div>
+    );
   }
 
   return (
     <div className="tx-history">
-      <h3>取引履歴</h3>
+      <h3>{t("transactions.title")}</h3>
       <ul>
-        {items.map((t) => (
+        {items.map((transaction) => (
           <li
-            key={t.transactionId}
-            className={`tx-history__item tx-history__item--${t.chainState}`}
+            key={transaction.transactionId}
+            className={`tx-history__item tx-history__item--${transaction.chainState}`}
           >
-            <strong>{t.type === "swap" ? "swap" : "送金"}</strong>{" "}
-            <span>{STATE_LABEL[t.chainState] ?? t.chainState}</span>
-            {t.txHash && (
+            <strong>
+              {transaction.type === "swap"
+                ? "swap"
+                : t("transactions.transfer")}
+            </strong>{" "}
+            <span>
+              {STATE_LABEL[transaction.chainState]
+                ? t(STATE_LABEL[transaction.chainState])
+                : transaction.chainState}
+            </span>
+            {transaction.txHash && (
               <>
                 {" "}
-                <code>{t.txHash}</code>
+                <code>{transaction.txHash}</code>
               </>
             )}
-            {t.statusCheckError && (
-              <p className="tx-history__warning">
-                最新の状態を確認できませんでした。表示は古い可能性があります。
-              </p>
+            {transaction.statusCheckError && (
+              <p className="tx-history__warning">{t("transactions.stale")}</p>
             )}
           </li>
         ))}

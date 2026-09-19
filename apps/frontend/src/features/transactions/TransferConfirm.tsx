@@ -1,4 +1,5 @@
 import type { ApprovalRequest } from "shared";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { useSignAndConfirmTransfer } from "./signAndConfirm.ts";
 
 /**
@@ -13,6 +14,7 @@ export function TransferConfirm({
   approval: ApprovalRequest;
   onDone?: () => void;
 }) {
+  const { t } = useI18n();
   const { state, signAndConfirmTransfer } = useSignAndConfirmTransfer();
   const snapshot = approval.approvedContentSnapshot as {
     network?: string;
@@ -25,7 +27,7 @@ export function TransferConfirm({
   if (state.status === "done") {
     return (
       <div className="transfer-confirm transfer-confirm--done">
-        送金を実行しました。トランザクションID:{" "}
+        {t("confirm.transferDone")}{" "}
         <code>{state.transaction.transactionId}</code>
       </div>
     );
@@ -33,20 +35,20 @@ export function TransferConfirm({
 
   return (
     <div className="transfer-confirm">
-      <h3>送金の確認</h3>
+      <h3>{t("confirm.transferTitle")}</h3>
       <dl>
-        <dt>ネットワーク</dt>
+        <dt>{t("confirm.network")}</dt>
         <dd>{snapshot.network}</dd>
-        <dt>トークン</dt>
+        <dt>{t("confirm.token")}</dt>
         <dd>{snapshot.token}</dd>
-        <dt>数量</dt>
+        <dt>{t("confirm.amount")}</dt>
         <dd>{snapshot.amount}</dd>
-        <dt>送信先</dt>
+        <dt>{t("confirm.destination")}</dt>
         <dd>
           <code>{snapshot.destinationAddress}</code>
         </dd>
-        <dt>手数料（概算）</dt>
-        <dd>{snapshot.estimatedFee ?? "ネットワーク手数料（Sepolia ETH）"}</dd>
+        <dt>{t("confirm.estimatedFee")}</dt>
+        <dd>{snapshot.estimatedFee ?? t("confirm.defaultFee")}</dd>
       </dl>
       <button
         type="button"
@@ -58,10 +60,10 @@ export function TransferConfirm({
         }
       >
         {state.status === "signing"
-          ? "ウォレットで署名中..."
+          ? t("confirm.signing")
           : state.status === "confirming"
-            ? "実行中..."
-            : "ウォレットで署名して送金"}
+            ? t("confirm.executing")
+            : t("confirm.executeTransfer")}
       </button>
       {state.status === "error" && (
         <p className="transfer-confirm__error">{state.message}</p>

@@ -531,6 +531,10 @@ components:
           type: string
         message:
           type: string
+        locale:
+          type: string
+          enum: [ja, en]
+          default: ja
 
     ChatStreamEvent:
       type: object

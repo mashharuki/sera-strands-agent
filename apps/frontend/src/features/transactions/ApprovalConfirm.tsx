@@ -1,5 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 import { SwapConfirm } from "./SwapConfirm.tsx";
 import { TransferConfirm } from "./TransferConfirm.tsx";
@@ -13,6 +14,7 @@ export function ApprovalConfirm({
   onDone?: () => void;
 }) {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
   const approvalQuery = useQuery({
     queryKey: ["approval", approvalId],
     queryFn: async () => {
@@ -21,14 +23,14 @@ export function ApprovalConfirm({
         "/transactions/approvals/{approvalId}",
         { params: { path: { approvalId } } },
       );
-      if (error || !data) throw new Error("確認内容の取得に失敗しました");
+      if (error || !data) throw new Error(t("approval.error"));
       return data;
     },
   });
 
-  if (approvalQuery.isLoading) return <div>確認内容を読み込み中...</div>;
+  if (approvalQuery.isLoading) return <div>{t("approval.loading")}</div>;
   if (approvalQuery.isError || !approvalQuery.data) {
-    return <div>確認内容を取得できませんでした</div>;
+    return <div>{t("approval.error")}</div>;
   }
 
   return approvalQuery.data.type === "transfer" ? (

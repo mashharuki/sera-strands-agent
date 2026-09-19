@@ -47,12 +47,17 @@ const SYSTEM_PROMPT = `あなたはSera Protocol AIチャットボットのア�
 export function createAgent(
   tools: InvokableTool<unknown, unknown>[] = [],
   history: MessageData[] = [],
+  locale: "ja" | "en" = "ja",
 ): Agent {
+  const languageInstruction =
+    locale === "en"
+      ? "\n- Always reply in English, including tool-result explanations and confirmation guidance."
+      : "\n- ツール結果の説明や確認案内を含め、常に日本語で回答する。";
   const config: AgentConfig = {
     model: createModel(),
     tools,
     messages: history,
-    systemPrompt: SYSTEM_PROMPT,
+    systemPrompt: SYSTEM_PROMPT + languageInstruction,
   };
   return new Agent(config);
 }

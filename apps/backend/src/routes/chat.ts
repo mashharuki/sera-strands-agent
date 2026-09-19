@@ -21,6 +21,7 @@ export interface ChatTurnInput {
   sessionId: string;
   userId: string;
   message: string;
+  locale?: "ja" | "en";
 }
 
 /**
@@ -59,6 +60,7 @@ export async function* streamChatTurn(
       createTransactionStatusTool(input.userId),
     ],
     history,
+    input.locale,
   );
   let assistantText = "";
 

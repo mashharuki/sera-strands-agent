@@ -23,8 +23,18 @@ interface LambdaFunctionUrlEvent {
   isBase64Encoded?: boolean;
 }
 
+function requestedLocale(
+  headers: LambdaFunctionUrlEvent["headers"],
+  bodyLocale?: unknown,
+): "ja" | "en" {
+  if (bodyLocale === "en" || bodyLocale === "ja") return bodyLocale;
+  const language = headers?.["accept-language"] ?? headers?.["Accept-Language"];
+  return language?.toLowerCase().startsWith("en") ? "en" : "ja";
+}
+
 export const handler = awslambda.streamifyResponse(
   async (event, responseStream) => {
+    const headerLocale = requestedLocale(event.headers);
     const auth = await verifyPrivyAccessToken(
       extractBearerToken(
         event.headers?.authorization ?? event.headers?.Authorization,
@@ -33,8 +43,12 @@ export const handler = awslambda.streamifyResponse(
     if (!auth.ok) {
       const message =
         auth.reason === "unauthenticated"
-          ? "ログインが必要です"
-          : "認証の設定が不正です（管理者に連絡してください）";
+          ? headerLocale === "en"
+            ? "Login is required"
+            : "ログインが必要です"
+          : headerLocale === "en"
+            ? "Authentication is not configured correctly. Contact the administrator."
+            : "認証の設定が不正です（管理者に連絡してください）";
       responseStream.write(
         `${JSON.stringify({ eventType: "error", payload: { message } })}\n`,
       );
@@ -52,12 +66,14 @@ export const handler = awslambda.streamifyResponse(
       : {};
     const sessionId: string = body.sessionId ?? "default";
     const message: string = body.message ?? "";
+    const locale = requestedLocale(event.headers, body.locale);
 
     try {
       for await (const chatEvent of streamChatTurn({
         sessionId,
         userId,
         message,
+        locale,
       })) {
         responseStream.write(`${JSON.stringify(chatEvent)}\n`);
       }
@@ -68,7 +84,15 @@ export const handler = awslambda.streamifyResponse(
         message: error instanceof Error ? error.message : String(error),
       });
       responseStream.write(
-        `${JSON.stringify({ eventType: "error", payload: { message: "チャットの処理中にエラーが発生しました" } })}\n`,
+        `${JSON.stringify({
+          eventType: "error",
+          payload: {
+            message:
+              locale === "en"
+                ? "An error occurred while processing the chat request"
+                : "チャットの処理中にエラーが発生しました",
+          },
+        })}\n`,
       );
     }
     responseStream.end();

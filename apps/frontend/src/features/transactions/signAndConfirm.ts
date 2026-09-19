@@ -5,6 +5,7 @@ import {
 } from "@privy-io/react-auth";
 import { useCallback, useState } from "react";
 import type { ApprovalRequest, Transaction } from "shared";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 
 export type ConfirmState =
@@ -25,6 +26,7 @@ export type ConfirmState =
  */
 export function useSignAndConfirmSwap() {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
   const { signTypedData } = useSignTypedData();
   const [state, setState] = useState<ConfirmState>({ status: "idle" });
 
@@ -59,7 +61,7 @@ export function useSignAndConfirmSwap() {
           },
         );
         if (error || !data) {
-          throw new Error("swapの実行に失敗しました");
+          throw new Error(t("confirm.swapError"));
         }
         setState({ status: "done", transaction: data });
         return data;
@@ -69,7 +71,7 @@ export function useSignAndConfirmSwap() {
         throw err;
       }
     },
-    [signTypedData, getAccessToken],
+    [signTypedData, getAccessToken, t],
   );
 
   return { state, signAndConfirmSwap: run };
@@ -82,6 +84,7 @@ export function useSignAndConfirmSwap() {
  */
 export function useSignAndConfirmTransfer() {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
   const { signTransaction } = useSignTransaction();
   const [state, setState] = useState<ConfirmState>({ status: "idle" });
 
@@ -105,7 +108,7 @@ export function useSignAndConfirmTransfer() {
         if (error || !data) {
           const message =
             (error as { message?: string } | undefined)?.message ??
-            "送金の実行に失敗しました";
+            t("confirm.transferError");
           throw new Error(message);
         }
         setState({ status: "done", transaction: data });
@@ -116,7 +119,7 @@ export function useSignAndConfirmTransfer() {
         throw err;
       }
     },
-    [signTransaction, getAccessToken],
+    [signTransaction, getAccessToken, t],
   );
 
   return { state, signAndConfirmTransfer: run };

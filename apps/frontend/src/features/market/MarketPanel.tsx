@@ -1,5 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useState } from "react";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 
 type Tab = "quote" | "orderbook" | "history";
@@ -10,6 +11,7 @@ type Tab = "quote" | "orderbook" | "history";
  */
 export function MarketPanel() {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("quote");
   const [fromToken, setFromToken] = useState("USDC");
   const [toToken, setToToken] = useState("USDT");
@@ -62,21 +64,21 @@ export function MarketPanel() {
           onClick={() => setTab("quote")}
           disabled={tab === "quote"}
         >
-          見積もり
+          {t("market.quote")}
         </button>
         <button
           type="button"
           onClick={() => setTab("orderbook")}
           disabled={tab === "orderbook"}
         >
-          板情報（参考値）
+          {t("market.orderbook")}
         </button>
         <button
           type="button"
           onClick={() => setTab("history")}
           disabled={tab === "history"}
         >
-          取引履歴
+          {t("market.history")}
         </button>
       </div>
 
@@ -103,6 +105,7 @@ export function MarketPanel() {
       )}
 
       <button
+        className="market-panel__submit"
         type="button"
         onClick={() =>
           void (tab === "quote"
@@ -113,19 +116,18 @@ export function MarketPanel() {
         }
         disabled={loading}
       >
-        {loading ? "取得中..." : "取得"}
+        {loading ? t("market.loading") : t("market.get")}
       </button>
 
       {tab === "orderbook" && result != null && (
-        <p className="market-panel__disclaimer">
-          ※ 参考値（実際の板データではなく、見積もりから合成した近似値）
-        </p>
+        <p className="market-panel__disclaimer">{t("market.disclaimer")}</p>
       )}
 
       {result != null && (
-        <pre className="market-panel__result">
-          {JSON.stringify(result, null, 2)}
-        </pre>
+        <details className="market-panel__result" open>
+          <summary>{t("market.result")}</summary>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </details>
       )}
     </div>
   );

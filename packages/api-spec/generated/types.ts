@@ -368,6 +368,11 @@ export interface components {
         ChatMessageRequest: {
             sessionId: string;
             message: string;
+            /**
+             * @default ja
+             * @enum {string}
+             */
+            locale: "ja" | "en";
         };
         /** @description NDJSON形式で逐次配信されるイベント（トークン片・ツール呼び出し・確認要求等）。詳細スキーマは実装フェーズで確定。 */
         ChatStreamEvent: {

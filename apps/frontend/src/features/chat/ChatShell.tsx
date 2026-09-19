@@ -1,8 +1,10 @@
 import { usePrivy } from "@privy-io/react-auth";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatStreamEvent } from "shared";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { useSessionStore } from "../../store/session.ts";
 import { ApprovalConfirm } from "../transactions/ApprovalConfirm.tsx";
+import { MessageContent } from "./MessageContent.tsx";
 
 interface ChatLine {
   id: string;
@@ -16,6 +18,7 @@ interface ChatLine {
  */
 export function ChatShell() {
   const { getAccessToken } = usePrivy();
+  const { locale, t } = useI18n();
   const sessionId = useSessionStore((s) => s.sessionId);
   const [lines, setLines] = useState<ChatLine[]>([]);
   const [input, setInput] = useState("");
@@ -24,6 +27,13 @@ export function ChatShell() {
     null,
   );
   const nextId = useRef(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (lines.length > 0 || pendingApprovalId !== null) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [lines, pendingApprovalId]);
 
   const sendMessage = useCallback(async () => {
     const message = input.trim();
@@ -57,13 +67,12 @@ export function ChatShell() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Accept-Language": locale,
         },
-        body: JSON.stringify({ sessionId, message }),
+        body: JSON.stringify({ sessionId, message, locale }),
       });
       if (!res.ok || !res.body) {
-        throw new Error(
-          `チャットの呼び出しに失敗しました (HTTP ${res.status})`,
-        );
+        throw new Error(`${t("chat.requestFailed")} (HTTP ${res.status})`);
       }
 
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -89,7 +98,9 @@ export function ChatShell() {
             const { message: errorMessage } = event.payload as unknown as {
               message?: string;
             };
-            showAssistantText(`エラー: ${errorMessage ?? "不明なエラー"}`);
+            showAssistantText(
+              `${t("chat.error")}: ${errorMessage ?? t("chat.unknownError")}`,
+            );
           }
           if (event.eventType === "approval_required") {
             const { approvalId } = event.payload as unknown as {
@@ -103,21 +114,62 @@ export function ChatShell() {
       // 通信失敗などを画面に出す（黙って何も表示しない状態にしない）。
       console.error("[chat] request failed", error);
       showAssistantText(
-        `エラー: ${error instanceof Error ? error.message : "通信に失敗しました"}`,
+        `${t("chat.error")}: ${
+          error instanceof Error ? error.message : t("chat.connectionFailed")
+        }`,
       );
     } finally {
       setIsStreaming(false);
     }
-  }, [input, isStreaming, getAccessToken, sessionId]);
+  }, [input, isStreaming, getAccessToken, sessionId, locale, t]);
+
+  const quickPrompts = [
+    t("chat.promptBalance"),
+    t("chat.promptQuote"),
+    t("chat.promptHistory"),
+  ];
 
   return (
     <div className="chat-shell">
       <div className="chat-messages">
+        {lines.length === 0 && (
+          <div className="chat-empty">
+            <div className="chat-empty__symbol" aria-hidden="true">
+              S
+            </div>
+            <p className="eyebrow">{t("chat.eyebrow")}</p>
+            <h2>{t("chat.title")}</h2>
+            <p>{t("chat.description")}</p>
+            <div className="quick-prompts">
+              {quickPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => setInput(prompt)}
+                >
+                  {prompt}
+                  <span aria-hidden="true">↗</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {lines.map((line) => (
           <div key={line.id} className={`chat-line chat-line--${line.role}`}>
-            {line.text}
+            <span className="chat-line__avatar" aria-hidden="true">
+              {line.role === "assistant" ? "S" : "YOU"}
+            </span>
+            <div className="chat-line__content">
+              <span className="chat-line__author">
+                {line.role === "assistant" ? "Sera" : t("chat.you")}
+              </span>
+              <MessageContent
+                text={line.text || (isStreaming ? t("chat.thinking") : "")}
+              />
+            </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       {pendingApprovalId && (
         <ApprovalConfirm
@@ -126,20 +178,30 @@ export function ChatShell() {
         />
       )}
       <form
+        className="chat-composer"
         onSubmit={(e) => {
           e.preventDefault();
           void sendMessage();
         }}
       >
-        <input
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="ウォレットを作成して、など"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
+          rows={1}
+          placeholder={t("chat.placeholder")}
           disabled={isStreaming}
         />
         <button type="submit" disabled={isStreaming || !input.trim()}>
-          送信
+          <span>{t("chat.send")}</span>
+          <span aria-hidden="true">↑</span>
         </button>
+        <small>{t("chat.hint")}</small>
       </form>
     </div>
   );

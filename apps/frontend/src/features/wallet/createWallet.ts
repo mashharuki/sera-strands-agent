@@ -1,6 +1,7 @@
 import { useCreateWallet, usePrivy } from "@privy-io/react-auth";
 import { useCallback, useState } from "react";
 import type { Wallet } from "shared";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 
 const SEPOLIA_CHAIN_ID = 11155111;
@@ -18,6 +19,7 @@ export type WalletCreationState =
  */
 export function useCreateSeraWallet() {
   const { getAccessToken, user } = usePrivy();
+  const { t } = useI18n();
   const { createWallet } = useCreateWallet();
   const [state, setState] = useState<WalletCreationState>({ status: "idle" });
 
@@ -38,7 +40,7 @@ export function useCreateSeraWallet() {
         },
       });
       if (error || !data) {
-        throw new Error("ウォレット情報の登録に失敗しました");
+        throw new Error(t("wallet.registerError"));
       }
       setState({ status: "done", wallet: data });
       return data;
@@ -47,7 +49,7 @@ export function useCreateSeraWallet() {
       setState({ status: "error", message });
       throw err;
     }
-  }, [createWallet, getAccessToken, user]);
+  }, [createWallet, getAccessToken, user, t]);
 
   return { state, createSeraWallet: run };
 }

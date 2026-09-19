@@ -1,6 +1,7 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 import { useSessionStore } from "../../store/session.ts";
 import { useCreateSeraWallet } from "./createWallet.ts";
@@ -11,6 +12,7 @@ import { useCreateSeraWallet } from "./createWallet.ts";
  */
 export function WalletCreationFlow() {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
   const setWallet = useSessionStore((s) => s.setWallet);
   const wallet = useSessionStore((s) => s.wallet);
   const { state, createSeraWallet } = useCreateSeraWallet();
@@ -36,26 +38,43 @@ export function WalletCreationFlow() {
   const effectiveWallet = wallet ?? walletQuery.data;
 
   if (walletQuery.isLoading) {
-    return <div className="wallet-banner">ウォレット状況を確認中...</div>;
+    return (
+      <div className="wallet-banner wallet-banner--loading">
+        {t("wallet.loading")}
+      </div>
+    );
   }
 
   if (effectiveWallet) {
     return (
       <div className="wallet-banner">
-        ウォレット: <code>{effectiveWallet.address}</code>
+        <div className="wallet-banner__topline">
+          <span className="wallet-banner__icon" aria-hidden="true">
+            ◈
+          </span>
+          <span>{t("wallet.connected")}</span>
+          <span className="status-dot" aria-hidden="true" />
+        </div>
+        <code title={effectiveWallet.address}>{effectiveWallet.address}</code>
+        <span className="wallet-banner__network">Ethereum Sepolia</span>
       </div>
     );
   }
 
   return (
     <div className="wallet-banner">
-      <span>ウォレットが未作成です。</span>
+      <span className="wallet-banner__icon" aria-hidden="true">
+        ◈
+      </span>
+      <strong>{t("wallet.notCreated")}</strong>
       <button
         type="button"
         onClick={() => void createSeraWallet()}
         disabled={state.status === "creating"}
       >
-        {state.status === "creating" ? "作成中..." : "ウォレットを作成"}
+        {state.status === "creating"
+          ? t("wallet.creating")
+          : t("wallet.create")}
       </button>
       {state.status === "error" && (
         <span className="wallet-error">{state.message}</span>

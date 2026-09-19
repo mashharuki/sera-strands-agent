@@ -1,5 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { useQuery } from "@tanstack/react-query";
+import { useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 import { useSignAndConfirmSwap } from "./signAndConfirm.ts";
 
@@ -16,6 +17,7 @@ export function SwapConfirm({
   onDone?: () => void;
 }) {
   const { getAccessToken } = usePrivy();
+  const { t } = useI18n();
   const { state, signAndConfirmSwap } = useSignAndConfirmSwap();
 
   const approvalQuery = useQuery({
@@ -28,17 +30,17 @@ export function SwapConfirm({
           params: { path: { approvalId } },
         },
       );
-      if (error || !data) throw new Error("確認内容の取得に失敗しました");
+      if (error || !data) throw new Error(t("approval.error"));
       return data;
     },
   });
 
   if (approvalQuery.isLoading)
-    return <div className="swap-confirm">確認内容を読み込み中...</div>;
+    return <div className="swap-confirm">{t("approval.loading")}</div>;
   if (approvalQuery.isError || !approvalQuery.data) {
     return (
       <div className="swap-confirm swap-confirm--error">
-        確認内容を取得できませんでした
+        {t("approval.error")}
       </div>
     );
   }
@@ -56,29 +58,28 @@ export function SwapConfirm({
   if (state.status === "done") {
     return (
       <div className="swap-confirm swap-confirm--done">
-        swapを実行しました。トランザクションID:{" "}
-        <code>{state.transaction.transactionId}</code>
+        {t("confirm.swapDone")} <code>{state.transaction.transactionId}</code>
       </div>
     );
   }
 
   return (
     <div className="swap-confirm">
-      <h3>swapの確認</h3>
+      <h3>{t("confirm.swapTitle")}</h3>
       <dl>
-        <dt>ネットワーク</dt>
+        <dt>{t("confirm.network")}</dt>
         <dd>{snapshot.network}</dd>
-        <dt>トークン</dt>
+        <dt>{t("confirm.token")}</dt>
         <dd>
           {snapshot.token} → {snapshot.toToken}
         </dd>
-        <dt>数量</dt>
+        <dt>{t("confirm.amount")}</dt>
         <dd>{snapshot.amount}</dd>
-        <dt>手数料（概算）</dt>
-        <dd>{snapshot.estimatedFee ?? "不明"}</dd>
+        <dt>{t("confirm.estimatedFee")}</dt>
+        <dd>{snapshot.estimatedFee ?? t("confirm.unknown")}</dd>
         {snapshot.slippage && (
           <>
-            <dt>スリッページ</dt>
+            <dt>{t("confirm.slippage")}</dt>
             <dd>{snapshot.slippage}</dd>
           </>
         )}
@@ -89,10 +90,10 @@ export function SwapConfirm({
         onClick={() => void signAndConfirmSwap(approval).then(() => onDone?.())}
       >
         {state.status === "signing"
-          ? "ウォレットで署名中..."
+          ? t("confirm.signing")
           : state.status === "confirming"
-            ? "実行中..."
-            : "ウォレットで署名して実行"}
+            ? t("confirm.executing")
+            : t("confirm.executeSwap")}
       </button>
       {state.status === "error" && (
         <p className="swap-confirm__error">{state.message}</p>

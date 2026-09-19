@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { I18nProvider } from "./i18n/I18nProvider.tsx";
 import "./index.css";
 import { queryClient } from "./services/apiClient.ts";
 
@@ -19,7 +20,9 @@ createRoot(document.getElementById("root")!).render(
     {/* config.embeddedWallets の詳細（ウォレット自動作成のタイミング等）はT032（US1）で確定する */}
     <PrivyProvider appId={privyAppId ?? ""}>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <I18nProvider>
+          <App />
+        </I18nProvider>
       </QueryClientProvider>
     </PrivyProvider>
   </StrictMode>,
