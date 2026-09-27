@@ -1,10 +1,9 @@
 # Tech Stack
 
-- Package manager: pnpm 11.24.0 (pinned via `packageManager` field). Workspace globs: `apps/*`, `packages/*`.
-- Root devDeps: Biome 2.5.11 (lint/format), knip 6.33.0 (unused-code detection), TypeScript ^7.0.2, @types/node ^26.
-- `apps/cdk`: aws-cdk-lib 2.149.0, aws-cdk CLI 2.149.0, TypeScript ~5.5.3 (older pin, separate from root), Jest 29 + ts-jest for tests.
-- `apps/backend`: Hono ^4.13.8, esbuild ^0.28.1 (bundles to `dist/index.js`, `platform=node target=node20`), npm-run-all2 for `deploy` script chaining. Deploys via raw `aws lambda update-function-code` CLI call (no CDK wiring yet).
-- `apps/frontend`: React 19.2, Vite 8, TypeScript ~6.0.2 (yet another separate pin), oxlint (not Biome) for `lint` script.
-- `packages/shared`, `packages/api-spec`: no dependencies, no source files — placeholders only.
-
-Note: three different TypeScript version pins exist across cdk/frontend/root — not yet unified. Don't assume a single TS version for the whole repo.
+- pnpm 11.24.0 (`packageManager`), Node 22+. Biome 2.5.x (root lint/format), knip, esbuild.
+- backend: Hono, `@strands-agents/sdk`, `@modelcontextprotocol/sdk`, `@privy-io/node`, viem, zod, AWS SDK v3 (Bedrock Runtime, DynamoDB, Secrets Manager); tests vitest + aws-sdk-client-mock. Bedrock default Amazon Nova 2 Lite (`jp.amazon.nova-2-lite-v1:0`, `ap-northeast-1`).
+- cdk: aws-cdk-lib, `NodejsFunction`, jest + ts-jest.
+- frontend: React 19, Vite, `@privy-io/react-auth`, TanStack Query, zustand, openapi-fetch; oxlint (not biome), vitest, Playwright.
+- api-spec: openapi-typescript (chosen over Java OpenAPI Generator), openapi-to-postmanv2, newman.
+- sera-mcp v1 via git submodule (v2 rejected: server-held keys, stdio only, no LICENSE).
+- TypeScript version pins differ per workspace (cdk ~5.5, frontend ~6.0, api-spec ^5.7, root ^7.0); not unified. Check package.json for exact versions rather than trusting this note.

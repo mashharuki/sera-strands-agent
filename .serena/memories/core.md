@@ -1,16 +1,18 @@
 # sera-strands-agent — Core
 
-pnpm workspace monorepo (`pnpm-workspace.yaml`: `apps/*`, `packages/*`). Root `package.json` name is `aws-strands-agent`; repo intent per `docs/memo.md` is "Sera Protocol対応のフルサーバーレスAIチャットボットをAWS上に構築する" (Strands Agents + Sera Protocol + AWS CDK). **As of onboarding, all apps/packages are unmodified scaffolds — no feature code exists yet** (see `mem:project_status`).
+pnpm workspace monorepo (`apps/*`, `packages/*`). Fully-serverless AWS chatbot for Sera Protocol (Ethereum Sepolia only): CDK + Strands Agents (Bedrock Nova) + Hono + React 19/Vite + Privy + `sera-mcp` (git submodule). **Implemented**, not a scaffold — see `mem:project_status` for what is verified vs not.
 
 ## Layout
-- `apps/cdk` — AWS CDK (TypeScript) infra, default `CdkStack`, unmodified starter.
-- `apps/backend` — Hono app (`src/index.ts`), built with esbuild for Lambda (`hono/aws-lambda`), single "Hello Hono!" route.
-- `apps/frontend` — Vite + React 19, unmodified `create-vite` template.
-- `packages/shared`, `packages/api-spec` — empty placeholder packages (no source, `main: index.js` doesn't exist yet).
+- `apps/backend` — Hono; `src/{agent,routes,store,auth}`; `/chat` streams NDJSON via Lambda Function URL, rest via API Gateway.
+- `apps/cdk` — `DataStack` (DynamoDB), `BackendStack` (API GW + API/Chat Lambdas + Secrets Manager), `FrontendStack` (S3+CloudFront).
+- `apps/frontend` — React 19, Privy, TanStack Query, zustand, openapi-fetch; `src/features/*`; Playwright in `e2e/`.
+- `packages/api-spec` — `openapi.yaml` is the API source of truth; generated types are a CI gate. `packages/shared` — shared types.
+- `vendor/sera-mcp` — submodule pinned `d6f50c1`; bundled by `pnpm build:sera-mcp`.
+- `README.md` = setup/env/verification status; `specs/001-sera-protocol-chatbot/` = Spec Kit artifacts; `AGENTS.md` = agent guidance.
 
 ## Memory graph
-- `mem:tech_stack` — languages, frameworks, package manager/version pins.
-- `mem:suggested_commands` — root and per-app scripts actually wired up.
-- `mem:conventions` — code style / workflow rules from `.claude/rules/*` (also mirrored in `.agents/rules/*`).
-- `mem:task_completion` — what to run before considering a task done.
-- `mem:project_status` — planning-vs-implementation state; read this before assuming any Sera/Strands/Privy integration exists.
+- `mem:tech_stack` — deps and version pins.
+- `mem:suggested_commands` — root/per-workspace scripts, deploy flow.
+- `mem:conventions` — rules from `.claude/rules/*` (mirrored in `.agents/rules/*`).
+- `mem:task_completion` — what to run before calling a task done (mirrors CI).
+- `mem:project_status` — implemented vs verified state; Sera API key handling.

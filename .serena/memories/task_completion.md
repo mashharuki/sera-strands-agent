@@ -1,13 +1,12 @@
 # Task Completion Checklist
 
-No unified root-level "test"/"typecheck" script exists yet — run per workspace:
+Mirror CI (`.github/workflows/ci.yml`), running the parts you touched:
+1. Edited `packages/api-spec/openapi.yaml` → `pnpm --filter api-spec run generate`, commit generated types; `generate:check` must pass.
+2. `pnpm check` (biome) and `pnpm --filter frontend lint` (oxlint).
+3. `pnpm --filter backend test`.
+4. `pnpm build:sera-mcp` then `pnpm --filter cdk test` for infra changes.
+5. `pnpm --filter frontend build` (typecheck + build) for frontend changes.
+6. `pnpm knip` when adding/removing code or deps.
+7. Commit per `mem:conventions` (Conventional Commits, explicit paths, no `git add -A`).
 
-1. `pnpm check` (root) — Biome lint+format fix across the whole repo (respects `biome.json` excludes: `.agents`, `.kiro/settings/templates`, `**/.wrangler`, frontend `env.d.ts`, worker-configuration.d.ts files that don't exist yet in this repo but are pre-excluded).
-2. Per touched workspace, run its own build/test:
-   - cdk: `pnpm --filter cdk build && pnpm --filter cdk test`
-   - backend: `pnpm --filter backend build`
-   - frontend: `pnpm --filter frontend build` (runs `tsc -b` then vite build — this is the closest thing to a typecheck) and `pnpm --filter frontend lint` (oxlint, separate from root Biome)
-3. `pnpm knip` — check for newly-introduced unused exports/files/deps when adding code.
-4. Follow `.claude/rules/git-workflow.md` for commit/PR conventions (see `mem:conventions`).
-
-No test suites exist yet for backend/frontend/shared/api-spec (`shared`/`api-spec` `test` scripts are stub `echo "Error: no test specified"`). Don't assume vitest/Playwright are wired up even though `docs/memo.md` names them as the intended target stack — verify before relying on them.
+`shared`/`api-spec` `test` scripts are stubs (exit 1), not gates. Don't claim unverified flows (see `mem:project_status`) work without running them.

@@ -8,79 +8,91 @@ Read https://ethskills.com/SKILL.md and follow it before writing Solidity or shi
 
 ## Project status
 
-This repo is currently a **pnpm-workspace monorepo scaffold**, not yet an implemented product. Per `docs/memo.md` (the design brief, in Japanese), the intended end state is a fully-serverless AWS chatbot for **Sera Protocol** (wallet creation/balance, orderbook/trade info, stablecoin swap, transfers via natural language) built with AWS CDK + **Strands Agents** (TS SDK) + Hono + React/Vite + Privy + `sera-mcp`/`sera-agents` + Ethereum Sepolia, with an OpenAPI-first API contract and a companion Japanese technical blog post as a deliverable.
+A **pnpm-workspace monorepo** for a fully-serverless AWS chatbot for **Sera Protocol** (wallet creation/balance, orderbook/quote/history, stablecoin swap, transfers, tx status via natural language; Ethereum Sepolia testnet only). Stack: AWS CDK + **Strands Agents** (TS SDK, Bedrock Amazon Nova) + Hono + React 19/Vite + Privy + `sera-mcp` (git submodule) + DynamoDB, with an OpenAPI-first contract. `README.md` is the source of truth for setup, env vars, and **verification status** (`## 検証状況`); `specs/001-sera-protocol-chatbot/` holds the Spec Kit artifacts (spec/plan/research/tasks); `docs/memo.md` is the original brief.
 
-As of now, **none of that feature set is implemented**:
-- `apps/backend` is a stock Hono app with a single `"Hello Hono!"` route.
-- `apps/cdk` is a stock, empty `CdkStack`.
-- `apps/frontend` is a stock Vite + React 19 template.
-- `packages/shared` and `packages/api-spec` have no source files.
-- No Strands Agents, Privy, sera-mcp, sera-agents, zod, zustand, Tanstack, Turbo, vitest, or Playwright dependencies exist yet in any `package.json`, even though `docs/memo.md` names them as the target stack.
+What exists (verified against the tree, not just docs):
+- `apps/backend`: Hono app. `src/agent/` (Strands client, sera-mcp client, tools, on-chain balance/transfer/swap-evidence/permit verification), `src/routes/` (`/chat` NDJSON stream, `/wallet`, `/market`, `/transactions`), `src/store/` (DynamoDB single-table: conversations/quotes/approvals/transactions/idempotency), `src/auth/privy.ts`. vitest tests in `test/`.
+- `apps/cdk`: `DataStack` (DynamoDB), `BackendStack` (API Gateway HTTP API + API Lambda, `/chat` Lambda Function URL with response streaming, Secrets Manager `SeraCredentials`), `FrontendStack` (S3 + CloudFront OAC).
+- `apps/frontend`: React 19 + Vite + Privy + TanStack Query + zustand + `openapi-fetch`; features under `src/features/{chat,market,transactions,wallet}`; Playwright spec in `e2e/`.
+- `packages/api-spec`: `openapi.yaml` (source of truth), generated types, Postman collection. `packages/shared`: shared types.
+- `vendor/sera-mcp`: git submodule pinned to `d6f50c1` (v1; v2 deliberately not used, see `specs/.../research.md`). Clone with `--recurse-submodules`.
 
-Do not assume any Sera/Strands/Privy integration exists — verify against current file contents before relying on it. When `docs/memo.md`'s brief is being executed, it explicitly calls for research/planning before implementation, deployment, or on-chain transactions in a first pass — check conversation/git history for whether a plan was produced before writing feature code.
+**Not everything is verified in a real environment.** Deploy, Privy login, and sera-mcp startup on Lambda are confirmed; Bedrock chat, real swap/transfer flows, and browser E2E are not (see README). Do not report unverified paths as working.
+
+### Sera API key/secret
+Optional operator credentials, loaded from Secrets Manager (`SERA_SECRET_ID`, JSON `{"apiKey","apiSecret"}`) by `apps/backend/src/agent/sera-auth.ts` and passed to the sera-mcp child process only as `SERA_API_KEY`/`SERA_API_SECRET`. Unset → sera-mcp still starts; only auth-required tools fail. The app intentionally avoids key-required paths (balances read on-chain, transfers built with viem, swap settlement via on-chain Transfer logs). Never put the key in env files, code, or logs.
+
+### Stale-doc caution
+This file previously described the repo as an empty scaffold; that is no longer true. If README/specs and code disagree, trust the code and fix the doc.
 
 ## Commands
 
-Package manager is **pnpm** (pinned to `11.24.0` via `packageManager`). Workspace globs: `apps/*`, `packages/*`.
+Package manager is **pnpm** (pinned to `11.24.0` via `packageManager`); Node 22+. Workspace globs: `apps/*`, `packages/*`.
 
 ### Root
 ```
-pnpm format   # biome format --write .
-pnpm check    # biome check --write .   (lint + format, fixes in place)
-pnpm jscpd    # copy-paste detection over apps/ and packages/
-pnpm knip     # unused files/exports/deps detection
+pnpm format              # biome format --write .
+pnpm check               # biome check --write .   (lint + format, fixes in place)
+pnpm jscpd               # copy-paste detection over apps/ and packages/
+pnpm knip                # unused files/exports/deps detection
+pnpm build:sera-mcp      # bundle vendor/sera-mcp -> apps/backend/vendor-dist/sera-mcp.mjs (required before cdk test/deploy)
+pnpm stack:deploy        # gen types -> bundle sera-mcp -> deploy Data/Backend -> build frontend with backend URLs -> deploy Frontend
+pnpm stack:destroy       # tear down (scripts/stack.mjs; reads root .env)
 ```
-Per-workspace proxies exist for convenience: `pnpm cdk <args>`, `pnpm backend <args>`, `pnpm frontend <args>`, `pnpm api-spec <args>`, `pnpm shared <args>` (each forwards to that workspace's own `package.json` scripts via `pnpm --filter`).
+Per-workspace proxies: `pnpm cdk|backend|frontend|api-spec|shared <args>` (forward via `pnpm --filter`). Note `pnpm deploy` collides with a pnpm builtin, hence `stack:*`.
 
-### apps/cdk (AWS CDK, TypeScript)
+### apps/backend
 ```
-pnpm --filter cdk build          # tsc
-pnpm --filter cdk watch          # tsc -w
-pnpm --filter cdk test           # jest (all tests)
-pnpm --filter cdk test -- -t "<name>"   # single test by name
-pnpm --filter cdk cdk -- synth   # emit CloudFormation
-pnpm --filter cdk cdk -- diff
-pnpm --filter cdk cdk -- deploy
+pnpm --filter backend test          # vitest run
+pnpm --filter backend test -- <file-or-pattern>
+```
+Deployed via CDK (`NodejsFunction`), **not** by the `build`/`zip`/`update`/`deploy` scripts in its `package.json` — those are leftovers from the scaffold (`update` targets a Lambda named `hello`); don't use them.
+
+### apps/cdk
+```
+pnpm --filter cdk test              # jest (CloudFormation assertions)
+pnpm --filter cdk test -- -t "<name>"
+pnpm --filter cdk build             # tsc
+pnpm --filter cdk cdk -- synth | diff | deploy
 ```
 
-### apps/backend (Hono, deployed as a Lambda handler)
+### apps/frontend
 ```
-pnpm --filter backend build   # esbuild bundle -> dist/index.js (platform=node, target=node20)
-pnpm --filter backend zip     # zip -j lambda.zip dist/index.js
-pnpm --filter backend deploy  # build -> zip -> aws lambda update-function-code (function name: "hello")
+pnpm --filter frontend dev
+pnpm --filter frontend build        # tsc -b && vite build (typecheck + build)
+pnpm --filter frontend lint         # oxlint (NOT biome)
+pnpm --filter frontend test         # vitest run src
+pnpm --filter frontend e2e          # playwright (not yet verified against a live deploy)
 ```
-Note: `deploy` assumes a Lambda function named `hello` already exists out-of-band; it is **not** currently wired through CDK.
 
-### apps/frontend (Vite + React 19)
+### packages/api-spec
 ```
-pnpm --filter frontend dev      # vite dev server
-pnpm --filter frontend build    # tsc -b && vite build  (closest thing to a typecheck)
-pnpm --filter frontend lint     # oxlint (NOT biome — frontend uses its own linter)
-pnpm --filter frontend preview
+pnpm --filter api-spec run generate         # openapi.yaml -> generated/types.ts
+pnpm --filter api-spec run generate:check   # regenerate + git diff --exit-code (CI gate)
+pnpm --filter api-spec run postman:generate
 ```
+After editing `openapi.yaml`, run `generate` and commit the generated types.
+
+### CI (`.github/workflows/ci.yml`)
+Order: `api-spec generate:check` → `biome check .` → `frontend lint` → `backend test` → `build:sera-mcp` → `cdk test` → `frontend build`. Run the relevant subset locally before pushing.
 
 ### Linting/formatting scope
-Biome (`biome.json`) runs repo-wide via `pnpm check`/`pnpm format` and excludes `.agents/`, `.kiro/settings/templates`, `**/.wrangler`, plus a couple of generated `.d.ts` paths that don't exist yet in this repo. The frontend has its own separate linter (`oxlint`), not covered by root Biome scripts.
+Biome (`biome.json`) runs repo-wide and excludes `.agents/`, `.claude`, `vendor`, `**/generated`, `**/vendor-dist`, `**/cdk.out`, `apps/frontend/public`. The frontend additionally uses `oxlint`. `packages/shared` and `packages/api-spec` `test` scripts are stubs (`exit 1`) — not a real gate.
 
-### Testing
-There is no root-level test runner yet. `apps/cdk` has Jest wired up (`apps/cdk/test/cdk.test.ts`). `packages/shared` and `packages/api-spec` currently have stub `test` scripts (`echo "Error: no test specified" && exit 1`) — treat as not implemented, not as a real gate. `apps/backend` and `apps/frontend` have no test scripts at all yet, despite vitest/Playwright being named as target tooling in `docs/memo.md`.
+### TypeScript versions
+Pins differ per workspace (`apps/cdk` `~5.5.3`, `apps/frontend` `~6.0.2`, `packages/api-spec` `^5.7.3`, root `^7.0.2`); they are not unified. Don't assume one version applies repo-wide.
 
 ## Architecture
 
-### Monorepo layout
-```
-apps/
-  cdk/        AWS CDK infra (TypeScript) — currently an empty stack, will define API Gateway/Lambda/S3/CloudFront etc.
-  backend/    Hono app, bundled with esbuild, intended to run as a Lambda handler (uses hono/aws-lambda's handle()).
-  frontend/   Vite + React 19 SPA.
-packages/
-  shared/     Placeholder — intended for code shared between apps/backend and apps/frontend (e.g. types, API client).
-  api-spec/   Placeholder — intended to hold the OpenAPI YAML contract and generated-client tooling per docs/memo.md.
-```
-Three different TypeScript version pins currently coexist across `apps/cdk` (`~5.5.3`), `apps/frontend` (`~6.0.2`), and the root (`^7.0.2`) — they are not yet unified; don't assume one TS version applies repo-wide.
+### Request flow
+Browser (React + Privy, sends Privy JWT) → either **API Gateway HTTP API → API Lambda (Hono)** for `/wallet`, `/market`, `/transactions`, or **Lambda Function URL (RESPONSE_STREAM) → Chat Lambda (Hono + Strands Agent)** for `/chat` (NDJSON; avoids API Gateway's 29 s limit). The Chat Lambda calls Bedrock (Nova) and spawns `sera-mcp` as a 127.0.0.1 child process; state lives in a single DynamoDB table; Sera credentials in Secrets Manager. Frontend is served from S3 + CloudFront. Diagram: `docs/architecture/` (`build_diagram.py` regenerates it).
 
-### Intended request flow (per `docs/memo.md`, not yet built)
-Frontend chat UI → API (Hono on Lambda, fronted by API Gateway) → Strands Agents orchestration → `sera-mcp`/`sera-agents` tool calls → Sera Protocol / chain state, with Privy handling user auth and wallet/signing. Read operations (balance, orderbook/quote lookups) and state-changing operations (swap, transfer) must be treated as distinct: state-changing actions require an explicit user-approved confirmation step showing network/token/amount/destination/fees before execution, and transaction success must be confirmed from actual tool/chain results, not from LLM text alone.
+### Invariants (do not break)
+- Read operations and state-changing operations are distinct. Swap/transfer need **chat approval + the user's own wallet signature** (non-custodial) after showing network/token/amount/destination/fees/expiry.
+- Transaction success/failure comes from verified Sera/on-chain results, never LLM text. Failed status lookups return the stale state plus `statusCheckError`.
+- Double-execution guard: DynamoDB conditional-write idempotency key taken right before broadcast, released on pre-broadcast failure.
+- Signed transfer txs are verified with viem (token contract, recipient, amount, signer) before sending; permit signatures are verified to be the user's own before forwarding to Sera.
+- The API contract is `packages/api-spec/openapi.yaml`; generated types must match (CI gate).
 
 ## Project rules (`.claude/rules/*.md`, mirrored in `.agents/rules/*.md`)
 

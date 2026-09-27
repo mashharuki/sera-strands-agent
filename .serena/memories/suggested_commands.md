@@ -1,25 +1,15 @@
 # Suggested Commands
 
-## Root (via pnpm --filter passthrough)
-- `pnpm format` — biome format --write .
-- `pnpm check` — biome check --write . (lint+format fix)
-- `pnpm jscpd` — copy-paste detection over apps/packages
-- `pnpm knip` — unused files/exports/deps detection
-- `pnpm cdk / backend / frontend / api-spec / shared` — proxies to that workspace's own scripts, e.g. `pnpm cdk build`, `pnpm frontend dev`.
+## Root
+- `pnpm check` / `pnpm format` — biome (fix in place); `pnpm knip`, `pnpm jscpd`.
+- `pnpm build:sera-mcp` — bundle submodule → `apps/backend/vendor-dist/sera-mcp.mjs` (needed before cdk test/deploy; clone with `--recurse-submodules`).
+- `pnpm stack:deploy` / `pnpm stack:destroy` — full deploy/teardown via `scripts/stack.mjs` (reads root `.env`). `pnpm deploy` collides with a pnpm builtin.
+- Proxies: `pnpm cdk|backend|frontend|api-spec|shared <args>`.
 
-## apps/cdk
-- `pnpm --filter cdk build` — tsc
-- `pnpm --filter cdk test` — jest
-- `pnpm --filter cdk cdk -- <cdk-subcommand>` — e.g. deploy/synth/diff
+## Per workspace
+- backend: `pnpm --filter backend test` (vitest). Ignore its `build/zip/update/deploy` scripts (scaffold leftovers targeting Lambda `hello`); deploy goes through CDK.
+- cdk: `pnpm --filter cdk test` (jest), `build`, `pnpm --filter cdk cdk -- synth|diff|deploy`.
+- frontend: `dev`, `build` (tsc -b + vite), `lint` (oxlint), `test` (vitest src), `e2e` (playwright).
+- api-spec: `pnpm --filter api-spec run generate | generate:check | postman:generate`.
 
-## apps/backend
-- `pnpm --filter backend build` — esbuild bundle to dist/index.js (node20 target)
-- `pnpm --filter backend deploy` — build → zip → `aws lambda update-function-code` (assumes a Lambda function named `hello` already exists; not CDK-managed yet)
-
-## apps/frontend
-- `pnpm --filter frontend dev` — vite dev server
-- `pnpm --filter frontend build` — tsc -b && vite build
-- `pnpm --filter frontend lint` — oxlint (not biome)
-
-## Darwin-specific notes
-- No repo-specific deviations from standard unix commands observed (ls/grep/git behave normally on this macOS box). Use `git -C <path>` instead of `cd` when running git in parallel across workspaces (per `.claude/rules/development.md`).
+Use `git -C <path>` rather than `cd` (per `.claude/rules/development.md`).
