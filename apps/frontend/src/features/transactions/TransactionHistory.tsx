@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type TranslationKey, useI18n } from "../../i18n/I18nProvider.tsx";
 import { createApiClient } from "../../services/apiClient.ts";
 
-const STATE_LABEL: Record<string, TranslationKey> = {
+export const CHAIN_STATE_LABEL: Record<string, TranslationKey> = {
   confirmed_success: "transactions.success",
   confirmed_failed: "transactions.failed",
   broadcast_pending: "transactions.pending",
@@ -77,8 +77,8 @@ export function TransactionHistory() {
                 : t("transactions.transfer")}
             </strong>{" "}
             <span>
-              {STATE_LABEL[transaction.chainState]
-                ? t(STATE_LABEL[transaction.chainState])
+              {CHAIN_STATE_LABEL[transaction.chainState]
+                ? t(CHAIN_STATE_LABEL[transaction.chainState])
                 : transaction.chainState}
             </span>
             {transaction.txHash && (
