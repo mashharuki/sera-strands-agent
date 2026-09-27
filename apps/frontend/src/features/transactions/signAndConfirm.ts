@@ -61,7 +61,10 @@ export function useSignAndConfirmSwap() {
           },
         );
         if (error || !data) {
-          throw new Error(t("confirm.swapError"));
+          const message =
+            (error as { message?: string } | undefined)?.message ??
+            t("confirm.swapError");
+          throw new Error(message);
         }
         setState({ status: "done", transaction: data });
         return data;
